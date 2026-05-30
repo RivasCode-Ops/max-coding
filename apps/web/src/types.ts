@@ -85,6 +85,34 @@ export type Finding = {
   priority: number
 }
 
+export type PortfolioAlert = {
+  level: 'critical' | 'warning' | 'info'
+  slug: string
+  path: string
+  code: string
+  message: string
+  action: string
+  health?: number
+}
+
+export type PortfolioAlertsSummary = {
+  critical: number
+  warning: number
+  info: number
+  total: number
+}
+
+export type EvolveResult = {
+  dryRun: boolean
+  summary: string
+  baseline: { health: { summary: string; overall: number }; analysisId?: number; recommendations: number }
+  pilot?: { planned: string[]; delta?: number; dryRun?: boolean; results?: { fixId: string; written?: string; skipped?: boolean }[] } | null
+  verification?: { verdict: string; summary: string; checklist: VerificationReport['checklist']; diff?: AnalysisResult['scanDiff'] } | null
+  final: { health?: { summary: string; overall: number }; analysisId?: number }
+  context?: RepoContext
+  reportMarkdown?: string
+}
+
 export type RepoCompareResult = {
   a: { slug: string; health?: string; overall: number }
   b: { slug: string; health?: string; overall: number }

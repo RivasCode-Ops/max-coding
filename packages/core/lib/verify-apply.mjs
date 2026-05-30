@@ -89,5 +89,6 @@ export async function verifyImplementation(repoPath, options = {}) {
   }
 
   const tasks = listCursorTasks(after.repo?.path || repoPath)
-  return buildVerificationReport(before, after, validation, tasks)
+  const report = buildVerificationReport(before, after, validation, tasks)
+  return { ...report, afterAnalysis: after }
 }

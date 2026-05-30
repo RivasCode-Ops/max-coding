@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.13.0',
+      version: '0.15.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -197,6 +197,36 @@ async function handle(req, res) {
     const fromDb = buildPortfolioFromDb(getDb())
     const items = mergePortfolio(fromDb, scanned)
     return sendJson(res, 200, { root, summary: portfolioSummary(items), items })
+  }
+
+  if (path === '/api/portfolio/rescan' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const root = resolve(body.root || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    return sendJson(res, 200, { root, summary: portfolioSummary(items), items, rescanned: scanned.length })
+  }
+
+  if (path === '/api/portfolio/alerts' && req.method === 'GET') {
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { buildPortfolioAlerts } = await import('../../core/lib/portfolio-alerts.mjs')
+    const { alerts, summary } = buildPortfolioAlerts(items, getDb())
+    return sendJson(res, 200, { root, alerts, summary })
+  }
+
+  if (path === '/api/evolve' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, dryRun = false, applyPilot = true, validateRepo = true, mode = 'quick' } = body
+    if (!repoPath) return sendJson(res, 400, { error: 'path obrigatório' })
+    const { evolveRepository } = await import('../../core/lib/evolve-repo.mjs')
+    const result = await evolveRepository(resolve(repoPath), { dryRun, applyPilot, validateRepo, mode })
+    return sendJson(res, 200, result)
   }
 
   if (path === '/api/install-hook' && req.method === 'POST') {

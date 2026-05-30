@@ -19,11 +19,13 @@ npm run pr-comment -- RivasCode-Ops/Quadro-Negro 1   # comentário em PR (GitHub
 npm run apply-pilot -- c:\_PROJETOS\Quadro-Negro  # aplicar P1/P2
 npm run verify -- c:\_PROJETOS\Quadro-Negro       # verificar pós-implementação
 npm run report -- c:\_PROJETOS\Quadro-Negro      # exportar relatório markdown
+npm run evolve -- c:\_PROJETOS\Meu-Repo          # evoluir (scan+pilot+verify)
+npm run evolve -- c:\_PROJETOS\Meu-Repo --dry-run # preview evolução
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.13)
+## V1 PRD — status (v0.15)
 
 | Requisito | Status |
 |-----------|--------|
@@ -47,6 +49,8 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 9 Verify** | ✅ verificar implementação, tasks registry, apply batch P1/P2 |
 | **Fase 10 Contexto** | ✅ repo ativo, sync PR, portfolio highlight, próximos passos |
 | **Fase 11 Export** | ✅ relatório markdown + comparar repos no portfolio |
+| **Fase 12 Evolve** | ✅ scan + pilot + verify em um fluxo |
+| **Fase 13 Alertas** | ✅ alertas portfolio + monitorar repo na UI |
 
 ### Fase 3 (local-first)
 
@@ -124,6 +128,22 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Relatório executivo markdown | `npm run report -- <path>` · `GET /api/analyses/:id/report` |
 | Comparar dois repos | `POST /api/compare` · UI no portfolio |
 | Copiar relatório / comparação | Botões na UI |
+
+### Fase 12 (evolve workflow)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Evoluir repo (scan→pilot→verify) | `npm run evolve -- <path>` · `POST /api/evolve` |
+| Preview evolução | `--dry-run` · botão **Preview evolução** |
+| Re-scan portfolio | `POST /api/portfolio/rescan` · botão na UI |
+
+### Fase 13 (alertas & watch UI)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Alertas de portfolio | `GET /api/portfolio/alerts?root=` |
+| Monitorar repo | Checkbox na UI (re-scan automático) |
+| Ação rápida em alerta | Botões Scan / Evoluir |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

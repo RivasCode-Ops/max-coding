@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, getAnalysis, getAnalysisFeedback, getAnalysisReport, getPortfolio, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisReport, getPortfolio, getPortfolioAlerts, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, rescanPortfolio, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioAlert, PortfolioAlertsSummary, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import './App.css'
 
@@ -32,6 +32,11 @@ export default function App() {
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
   const [compareTarget, setCompareTarget] = useState('')
   const [compareResult, setCompareResult] = useState<RepoCompareResult | null>(null)
+  const [evolveResult, setEvolveResult] = useState<EvolveResult | null>(null)
+  const [portfolioAlerts, setPortfolioAlerts] = useState<{ alerts: PortfolioAlert[]; summary: PortfolioAlertsSummary } | null>(null)
+  const [watchOn, setWatchOn] = useState(false)
+  const [watchInterval, setWatchInterval] = useState(300)
+  const [watchLog, setWatchLog] = useState<{ at: string; health: string; delta?: number }[]>([])
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -78,10 +83,70 @@ export default function App() {
     try {
       const p = await getPortfolio(portfolioRoot)
       setPortfolio({ summary: p.summary, items: p.items })
+      const a = await getPortfolioAlerts(portfolioRoot)
+      setPortfolioAlerts({ alerts: a.alerts, summary: a.summary })
     } catch {
       setPortfolio(null)
+      setPortfolioAlerts(null)
     }
   }
+
+  useEffect(() => {
+    if (!watchOn || !repoPath.trim()) return
+    let cancelled = false
+    async function tick() {
+      if (busy || cancelled) return
+      try {
+        const res = await analyze(repoPath.trim(), 'quick')
+        const data = { ...res.data, analysisId: res.data.analysisId ?? res.id }
+        if (cancelled) return
+        setWatchLog((log) =>
+          [
+            {
+              at: new Date().toISOString(),
+              health: data.health.summary,
+              delta: data.scanDiff?.healthDelta,
+            },
+            ...log,
+          ].slice(0, 8),
+        )
+        setResult(data)
+        if (data.repo?.slug) {
+          setActiveSlug(data.repo.slug)
+          await loadRepoContext(data.repo.path, data.analysisId)
+        }
+        if (data.scanDiff?.healthDelta != null && data.scanDiff.healthDelta <= -5) {
+          setPortfolioAlerts((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  alerts: [
+                    {
+                      level: 'warning',
+                      slug: data.repo.slug,
+                      path: data.repo.path,
+                      code: 'watch-regression',
+                      message: `Monitor: health caiu ${data.scanDiff!.healthDelta} pts`,
+                      action: 'scan',
+                      health: data.health.overall,
+                    },
+                    ...prev.alerts,
+                  ].slice(0, 20),
+                }
+              : prev,
+          )
+        }
+      } catch {
+        /* ignore watch errors */
+      }
+    }
+    tick()
+    const id = setInterval(tick, watchInterval * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [watchOn, watchInterval, repoPath])
 
   async function refresh() {
     await refreshHistory()
@@ -272,6 +337,47 @@ export default function App() {
     await runCursorApply(s.id, autoPilot || Boolean(s.pilotFix && s.kind === 'pilot'))
   }
 
+  async function runEvolve(dryRun: boolean) {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return
+    setBusy(true)
+    setEvolveResult(null)
+    try {
+      const r = await evolveRepo(path, dryRun)
+      setEvolveResult(r)
+      if (!dryRun && r.final?.analysisId) {
+        await load(r.final.analysisId)
+      } else if (r.context) {
+        setRepoContext(r.context)
+      }
+      await refreshHistory()
+      refreshPortfolio()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleAlertAction(alert: PortfolioAlert) {
+    setRepoPath(alert.path)
+    setActiveSlug(alert.slug)
+    if (alert.action === 'evolve') await runEvolve(false)
+    else await run('quick')
+  }
+
+  async function runPortfolioRescan() {
+    setBusy(true)
+    try {
+      const p = await rescanPortfolio(portfolioRoot)
+      setPortfolio({ summary: p.summary, items: p.items })
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function runCompare() {
     const pathA = result?.repo?.path || repoPath.trim()
     if (!pathA || !compareTarget) return alert('Selecione repo ativo e um alvo no portfolio')
@@ -411,6 +517,31 @@ export default function App() {
           <input type="checkbox" checked={validateOnScan} onChange={(e) => setValidateOnScan(e.target.checked)} />
           Validar scripts (test/build/lint) junto com o scan
         </label>
+        <label className="checkbox-row">
+          <input type="checkbox" checked={watchOn} onChange={(e) => setWatchOn(e.target.checked)} />
+          Monitorar repo (re-scan automático)
+        </label>
+        {watchOn && (
+          <div className="watch-row">
+            <label>Intervalo (seg)</label>
+            <select value={watchInterval} onChange={(e) => setWatchInterval(Number(e.target.value))}>
+              <option value={60}>60</option>
+              <option value={300}>300 (5 min)</option>
+              <option value={900}>900 (15 min)</option>
+              <option value={3600}>3600 (1 h)</option>
+            </select>
+          </div>
+        )}
+        {watchLog.length > 0 && (
+          <ul className="watch-log">
+            {watchLog.map((w, i) => (
+              <li key={i}>
+                {new Date(w.at).toLocaleTimeString('pt-BR')} — {w.health}
+                {w.delta != null && ` (Δ ${w.delta >= 0 ? '+' : ''}${w.delta})`}
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="row">
           <button disabled={busy} onClick={() => run('quick')}>
             Quick Scan
@@ -474,6 +605,31 @@ export default function App() {
               </ul>
             </>
           )}
+          <div className="row">
+            <button type="button" className="cursor-btn" disabled={busy} onClick={() => runEvolve(false)}>
+              Evoluir repo
+            </button>
+            <button type="button" className="secondary" disabled={busy} onClick={() => runEvolve(true)}>
+              Preview evolução
+            </button>
+          </div>
+          {evolveResult && (
+            <div className={`verify-box verdict-${(evolveResult.verification?.verdict || 'stable').toLowerCase()}`}>
+              <strong>{evolveResult.summary}</strong>
+              {evolveResult.pilot?.planned?.length ? (
+                <p className="note">Pilot: {evolveResult.pilot.planned.join(', ')}</p>
+              ) : null}
+              {evolveResult.verification?.checklist && (
+                <ul>
+                  {evolveResult.verification.checklist.map((c) => (
+                    <li key={c.id} className={c.ok ? 'ok' : 'fail'}>
+                      {c.label}: {c.detail}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -507,6 +663,27 @@ export default function App() {
         <button type="button" className="secondary" disabled={busy} onClick={() => refresh()}>
           Atualizar portfolio
         </button>
+        <button type="button" className="secondary" disabled={busy} onClick={runPortfolioRescan}>
+          Re-scan portfolio
+        </button>
+        {portfolioAlerts && portfolioAlerts.summary.total > 0 && (
+          <div className="alerts-box">
+            <strong>
+              Alertas: {portfolioAlerts.summary.critical} críticos · {portfolioAlerts.summary.warning} avisos ·{' '}
+              {portfolioAlerts.summary.info} info
+            </strong>
+            <ul className="alerts-list">
+              {portfolioAlerts.alerts.slice(0, 8).map((a) => (
+                <li key={`${a.slug}-${a.code}`} className={`alert-${a.level}`}>
+                  <strong>{a.slug}</strong> — {a.message}
+                  <button type="button" className="tiny secondary" disabled={busy} onClick={() => handleAlertAction(a)}>
+                    {a.action === 'evolve' ? 'Evoluir' : 'Scan'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {portfolio && (
           <>
             <p>

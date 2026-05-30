@@ -104,6 +104,18 @@
 - `repo-compare.mjs` — comparar health/categorias/recs entre repos
 - `npm run report` + UI exportar + comparar no portfolio
 
+### Bloco N — Fase 12 Evolve (v0.14) ✅
+
+- `evolve-repo.mjs` — scan → apply-pilot → verify → relatório
+- `npm run evolve` + UI **Evoluir repo**
+- `POST /api/portfolio/rescan` — re-scan multi-repo
+
+### Bloco O — Fase 13 Alertas (v0.15) ✅
+
+- `portfolio-alerts.mjs` — health baixo, regressão, scan stale
+- `GET /api/portfolio/alerts`
+- UI monitorar repo + painel de alertas
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -121,3 +133,5 @@
 - [x] Fase 9 Verify (QA loop + batch + task registry)
 - [x] Fase 10 Contexto (repo ativo + next actions + sync PR)
 - [x] Fase 11 Export (relatório + comparar repos)
+- [x] Fase 12 Evolve (scan + pilot + verify)
+- [x] Fase 13 Alertas (portfolio alerts + watch UI)

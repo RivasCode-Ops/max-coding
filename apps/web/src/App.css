@@ -423,3 +423,62 @@ tr.portfolio-active td {
   background: #0b1220;
   border: 1px solid #334155;
 }
+
+.watch-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.watch-row select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0b1220;
+  color: #fff;
+}
+
+.watch-log {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.alerts-box {
+  margin: 12px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #1a1a2e;
+  border: 1px solid #334155;
+}
+
+.alerts-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.alerts-list li {
+  margin: 6px 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.alert-critical {
+  background: rgba(239, 68, 68, 0.12);
+  border-left: 3px solid #ef4444;
+}
+
+.alert-warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-left: 3px solid #f59e0b;
+}
+
+.alert-info {
+  background: rgba(59, 130, 246, 0.12);
+  border-left: 3px solid #3b82f6;
+}

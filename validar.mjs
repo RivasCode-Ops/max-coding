@@ -187,6 +187,22 @@ await step('Report export + compare (Fase 11)', async () => {
   } else ok(`report ${md.length} chars`)
 })
 
+await step('Evolve workflow (Fase 12)', async () => {
+  const { evolveRepository } = await import('./packages/core/lib/evolve-repo.mjs')
+  const preview = await evolveRepository(ROOT, { dryRun: true, applyPilot: true, validateRepo: false })
+  if (!preview.summary) throw new Error('evolve preview falhou')
+  ok(`evolve preview: ${preview.summary}`)
+})
+
+await step('Portfolio alerts (Fase 13)', async () => {
+  const { buildPortfolioAlerts } = await import('./packages/core/lib/portfolio-alerts.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import('./packages/core/lib/portfolio.mjs')
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const { summary } = buildPortfolioAlerts(items, getDb())
+  ok(`${summary.total} alertas · ${summary.critical} críticos`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

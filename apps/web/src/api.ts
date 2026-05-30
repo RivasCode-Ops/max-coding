@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioAlert, PortfolioAlertsSummary, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -137,4 +137,24 @@ export function compareRepos(pathA: string, pathB: string) {
     method: 'POST',
     body: JSON.stringify({ pathA, pathB }),
   })
+}
+
+export function evolveRepo(path: string, dryRun = false) {
+  return api<EvolveResult>('/api/evolve', {
+    method: 'POST',
+    body: JSON.stringify({ path, dryRun, applyPilot: true, validateRepo: !dryRun }),
+  })
+}
+
+export function rescanPortfolio(root: string) {
+  return api<{ root: string; summary: PortfolioSummary; items: PortfolioItem[]; rescanned: number }>(
+    '/api/portfolio/rescan',
+    { method: 'POST', body: JSON.stringify({ root }) },
+  )
+}
+
+export function getPortfolioAlerts(root: string) {
+  return api<{ root: string; alerts: PortfolioAlert[]; summary: PortfolioAlertsSummary }>(
+    `/api/portfolio/alerts?root=${encodeURIComponent(root)}`,
+  )
 }
