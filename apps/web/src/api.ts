@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -49,8 +49,19 @@ export function applyRules(analysisId: number) {
 }
 
 export function getPortfolio(root = 'c:\\_PROJETOS') {
-  return api<{ root: string; summary: PortfolioSummary; items: PortfolioItem[]; chart?: PortfolioChart; history?: PortfolioHistory }>(
-    `/api/portfolio?root=${encodeURIComponent(root)}`,
+  return api<{
+    root: string
+    summary: PortfolioSummary
+    items: PortfolioItem[]
+    chart?: PortfolioChart
+    history?: PortfolioHistory
+    heatmap?: PortfolioHeatmap
+  }>(`/api/portfolio?root=${encodeURIComponent(root)}`)
+}
+
+export function getPortfolioHeatmap(root = 'c:\\_PROJETOS', maxRepos = 10) {
+  return api<{ root: string; heatmap: PortfolioHeatmap }>(
+    `/api/portfolio/heatmap?root=${encodeURIComponent(root)}&max=${maxRepos}`,
   )
 }
 

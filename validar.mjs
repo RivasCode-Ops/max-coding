@@ -262,6 +262,16 @@ await step('Portfolio digest (Fase 19)', async () => {
   ok(`digest ${digest.summary.total} repos · média ${digest.summary.averageHealth}`)
 })
 
+await step('Portfolio heatmap (Fase 20)', async () => {
+  const { buildPortfolioHeatmap } = await import('./packages/core/lib/portfolio-heatmap.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import('./packages/core/lib/portfolio.mjs')
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const heatmap = buildPortfolioHeatmap(items, { maxRepos: 3 })
+  if (heatmap.rows.length !== 12) throw new Error('heatmap deve ter 12 categorias')
+  ok(`${heatmap.summary.repoCount} repos · fraco: ${heatmap.summary.weakestCategories[0]?.label || '—'}`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

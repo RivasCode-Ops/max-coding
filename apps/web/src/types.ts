@@ -153,6 +153,31 @@ export type PortfolioHistory = {
   summary: PortfolioHistorySummary
 }
 
+export type PortfolioHeatmapCell = {
+  slug: string
+  pct: number
+  status: string
+  color: string
+}
+
+export type PortfolioHeatmapRow = {
+  id: string
+  label: string
+  cells: PortfolioHeatmapCell[]
+  averagePct: number
+}
+
+export type PortfolioHeatmap = {
+  columns: { slug: string; path: string; health: number; grade: string }[]
+  rows: PortfolioHeatmapRow[]
+  summary: {
+    repoCount: number
+    categoryCount: number
+    weakestCategories: { id: string; label: string; averagePct: number }[]
+    strongestCategories: { id: string; label: string; averagePct: number }[]
+  }
+}
+
 export type EvolveResult = {
   dryRun: boolean
   summary: string

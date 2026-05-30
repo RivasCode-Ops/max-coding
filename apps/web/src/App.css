@@ -609,3 +609,47 @@ tr.portfolio-active td {
 .history-spark {
   display: block;
 }
+
+.portfolio-heatmap-wrap {
+  margin: 12px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #0b1220;
+  border: 1px solid #334155;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+}
+
+.heatmap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.heatmap-table th,
+.heatmap-table td {
+  padding: 4px 6px;
+  text-align: center;
+  border-bottom: 1px solid #1e293b;
+}
+
+.heatmap-label {
+  text-align: left !important;
+  max-width: 140px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heatmap-cell {
+  display: inline-block;
+  min-width: 28px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: #0f172a;
+  font-weight: 600;
+}

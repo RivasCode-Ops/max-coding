@@ -154,6 +154,12 @@
 - `npm run portfolio-digest` · `GET /api/portfolio/digest`
 - UI **Exportar digest** no portfolio
 
+### Bloco V — Fase 20 Heatmap (v0.22) ✅
+
+- `portfolio-heatmap.mjs` — matriz 12 categorias × repos
+- `npm run portfolio-heatmap` · `GET /api/portfolio/heatmap` · SVG opcional
+- UI tabela colorida **Heatmap de categorias**
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -179,3 +185,4 @@
 - [x] Fase 17 Watch portfolio (re-scan alertas + log SQLite + UI)
 - [x] Fase 18 History (histórico multi-repo + sparklines na UI)
 - [x] Fase 19 Digest (relatório executivo do portfolio)
+- [x] Fase 20 Heatmap (12 categorias × repos no portfolio)

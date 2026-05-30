@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.21.0',
+      version: '0.22.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -207,12 +207,20 @@ async function handle(req, res) {
     const items = mergePortfolio(fromDb, scanned)
     const { buildPortfolioChartData } = await import('../../core/lib/portfolio-chart.mjs')
     const { buildPortfolioHistory } = await import('../../core/lib/portfolio-history.mjs')
+    const maxHeatmap = Number(url.searchParams.get('heatmapMax') || 8)
+    const includeHeatmap = url.searchParams.get('heatmap') !== '0'
+    let heatmap = null
+    if (includeHeatmap) {
+      const { buildPortfolioHeatmap } = await import('../../core/lib/portfolio-heatmap.mjs')
+      heatmap = buildPortfolioHeatmap(items, { maxRepos: maxHeatmap })
+    }
     return sendJson(res, 200, {
       root,
       summary: portfolioSummary(items),
       items,
       chart: buildPortfolioChartData(items),
       history: buildPortfolioHistory(getDb(), items),
+      heatmap,
     })
   }
 
@@ -238,6 +246,23 @@ async function handle(req, res) {
       return sendJson(res, 200, { root, markdown: formatPortfolioDigestMarkdown(digest) })
     }
     return sendJson(res, 200, { root, digest, markdown: formatPortfolioDigestMarkdown(digest) })
+  }
+
+  if (path === '/api/portfolio/heatmap' && req.method === 'GET') {
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const maxRepos = Number(url.searchParams.get('max') || 10)
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { buildPortfolioHeatmap, portfolioHeatmapSvg } = await import('../../core/lib/portfolio-heatmap.mjs')
+    const heatmap = buildPortfolioHeatmap(items, { maxRepos })
+    if (url.searchParams.get('format') === 'svg') {
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8' })
+      res.end(portfolioHeatmapSvg(heatmap))
+      return
+    }
+    return sendJson(res, 200, { root, heatmap })
   }
 
   if (path === '/api/portfolio/chart' && req.method === 'GET') {

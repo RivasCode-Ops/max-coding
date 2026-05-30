@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
 import PortfolioHistoryPanel from './PortfolioHistoryPanel'
+import PortfolioHeatmapPanel from './PortfolioHeatmap'
 import './App.css'
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
     items: PortfolioItem[]
     chart?: PortfolioChart
     history?: PortfolioHistory
+    heatmap?: PortfolioHeatmap
   } | null>(null)
   const [prOwnerRepo, setPrOwnerRepo] = useState('RivasCode-Ops/Quadro-Negro')
   const [prNumber, setPrNumber] = useState('1')
@@ -95,7 +97,7 @@ export default function App() {
   async function refreshPortfolio() {
     try {
       const p = await getPortfolio(portfolioRoot)
-      setPortfolio({ summary: p.summary, items: p.items, chart: p.chart, history: p.history })
+      setPortfolio({ summary: p.summary, items: p.items, chart: p.chart, history: p.history, heatmap: p.heatmap })
       const a = await getPortfolioAlerts(portfolioRoot)
       setPortfolioAlerts({ alerts: a.alerts, summary: a.summary })
     } catch {
@@ -892,6 +894,12 @@ export default function App() {
                     setActiveSlug(slug)
                   }}
                 />
+              </>
+            )}
+            {portfolio.heatmap && portfolio.heatmap.columns.length > 0 && (
+              <>
+                <h3 className="subhead">Heatmap de categorias (12)</h3>
+                <PortfolioHeatmapPanel heatmap={portfolio.heatmap} />
               </>
             )}
             {activeSlug && portfolio.items.length > 1 && (

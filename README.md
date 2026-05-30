@@ -26,11 +26,12 @@ npm run plan -- c:\_PROJETOS\Meu-Repo           # pacote plan (backlog + PR plan
 npm run watch-portfolio -- c:\_PROJETOS 1800   # re-scan repos com alertas
 npm run portfolio-history -- c:\_PROJETOS      # tendências de health no portfolio
 npm run portfolio-digest -- c:\_PROJETOS       # relatório executivo do portfolio
+npm run portfolio-heatmap -- c:\_PROJETOS 8    # heatmap 12 categorias × repos
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.21)
+## V1 PRD — status (v0.22)
 
 | Requisito | Status |
 |-----------|--------|
@@ -62,6 +63,7 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 17 Watch** | ✅ monitorar portfolio + log SQLite + CLI/API |
 | **Fase 18 History** | ✅ histórico multi-repo + sparklines na UI |
 | **Fase 19 Digest** | ✅ relatório executivo exportável do portfolio |
+| **Fase 20 Heatmap** | ✅ matriz 12 categorias × repos na UI |
 
 ### Fase 3 (local-first)
 
@@ -202,6 +204,14 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Relatório executivo | `npm run portfolio-digest -- [root]` |
 | Markdown JSON | `GET /api/portfolio/digest` · `?format=md` |
 | Copiar na UI | Botão **Exportar digest** |
+
+### Fase 20 (category heatmap)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Matriz categorias × repos | `npm run portfolio-heatmap -- [root] [max]` |
+| API + SVG | `GET /api/portfolio/heatmap` · `?format=svg` |
+| UI | Tabela **Heatmap de categorias** no portfolio |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 
