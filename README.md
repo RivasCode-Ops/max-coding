@@ -34,11 +34,12 @@ npm run notify-config                    # ver config de notificações
 npm run notify-config -- test            # teste arquivo/webhook
 npm run watch-schedule                   # status da tarefa Windows
 npm run watch-schedule -- install c:\_PROJETOS 60
+npm run portfolio-scorecard -- c:\_PROJETOS 10
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.26)
+## V1 PRD — status (v0.27)
 
 Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 
@@ -255,6 +256,14 @@ Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 | Task Scheduler Windows | `npm run watch-schedule` · `install` / `remove` |
 | Tick único | `npm run watch-portfolio -- <root> --once` |
 | API + UI | `GET /api/watch-schedule/status` · **Agendamento watch** |
+
+### Fase 25 (scorecard ZIP)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Bundle exportável | `npm run portfolio-scorecard -- [root] [max]` |
+| Conteúdo | digest.md · chart.svg · heatmap.svg · scorecards/*.md |
+| Download | `GET /api/portfolio/scorecard` · UI **Scorecard ZIP** |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

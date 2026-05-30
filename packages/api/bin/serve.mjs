@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.26.0',
+      version: '0.27.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -309,6 +309,23 @@ async function handle(req, res) {
       return sendJson(res, 200, { root, markdown: formatPortfolioDigestMarkdown(digest) })
     }
     return sendJson(res, 200, { root, digest, markdown: formatPortfolioDigestMarkdown(digest) })
+  }
+
+  if (path === '/api/portfolio/scorecard' && req.method === 'GET') {
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const maxScorecards = Number(url.searchParams.get('max') || 10)
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { buildPortfolioScorecardZip } = await import('../../core/lib/portfolio-scorecard.mjs')
+    const zip = buildPortfolioScorecardZip(items, getDb(), { root, maxScorecards })
+    res.writeHead(200, {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${zip.filename}"`,
+    })
+    res.end(zip.buffer)
+    return
   }
 
   if (path === '/api/portfolio/heatmap' && req.method === 'GET') {

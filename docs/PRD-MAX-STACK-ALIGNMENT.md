@@ -186,6 +186,12 @@
 - `npm run watch-schedule` · `GET /api/watch-schedule/status` · install/remove
 - UI **Agendamento watch** no portfolio
 
+### Bloco AA — Fase 25 Scorecard ZIP (v0.27) ✅
+
+- `portfolio-scorecard.mjs` + `zip-store.mjs` — bundle digest + SVGs + scorecards
+- `npm run portfolio-scorecard` · `GET /api/portfolio/scorecard`
+- UI botão **Scorecard ZIP**
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -216,3 +222,4 @@
 - [x] Fase 22 Goals (metas de health no portfolio)
 - [x] Fase 23 Notify (notificações watch → arquivo/webhook)
 - [x] Fase 24 Watch schedule (Task Scheduler Windows + `--once`)
+- [x] Fase 25 Scorecard ZIP (digest + heatmap/chart SVG + scorecards)

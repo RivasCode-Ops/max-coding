@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, downloadPortfolioScorecard, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
 import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry, WatchScheduleStatus } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
@@ -130,7 +130,7 @@ export default function App() {
         setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
-      if (s.version && s.version !== '0.26.0') {
+      if (s.version && s.version !== '0.27.0') {
         setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
       }
       const h = await listHistory()
@@ -507,6 +507,23 @@ export default function App() {
       const p = await rescanPortfolio(portfolioRoot)
       setPortfolio({ summary: p.summary, items: p.items })
       await refreshPortfolio()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function exportPortfolioScorecard() {
+    setBusy(true)
+    try {
+      const { blob, filename } = await downloadPortfolioScorecard(portfolioRoot, 10)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erro')
     } finally {
@@ -1055,6 +1072,9 @@ export default function App() {
         </button>
         <button type="button" className="tiny secondary" disabled={busy} onClick={exportPortfolioDigest}>
           Exportar digest
+        </button>
+        <button type="button" className="tiny secondary" disabled={busy} onClick={exportPortfolioScorecard}>
+          Scorecard ZIP
         </button>
         <label className="inline-check">
           <input

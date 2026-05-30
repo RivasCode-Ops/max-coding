@@ -272,3 +272,17 @@ export function removeWatchSchedule() {
     { method: 'POST', body: '{}' },
   )
 }
+
+export function downloadPortfolioScorecard(root = 'c:\\_PROJETOS', max = 10) {
+  return fetch(`/api/portfolio/scorecard?root=${encodeURIComponent(root)}&max=${max}`).then(async (res) => {
+    const ct = res.headers.get('content-type') || ''
+    if (!res.ok || (!ct.includes('zip') && !ct.includes('octet-stream'))) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      throw new Error(data.error || res.statusText)
+    }
+    const blob = await res.blob()
+    const disposition = res.headers.get('content-disposition') || ''
+    const match = disposition.match(/filename="([^"]+)"/)
+    return { blob, filename: match?.[1] || 'max-stack-scorecard.zip' }
+  })
+}

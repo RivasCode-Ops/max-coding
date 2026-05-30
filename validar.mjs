@@ -317,6 +317,19 @@ await step('Watch schedule (Fase 24)', async () => {
   ok(`${status.platform} · suportado=${status.supported} · task=${status.task.installed ? 'sim' : 'não'}`)
 })
 
+await step('Portfolio scorecard ZIP (Fase 25)', async () => {
+  const { buildPortfolioScorecardZip } = await import('./packages/core/lib/portfolio-scorecard.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import(
+    './packages/core/lib/portfolio.mjs',
+  )
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const zip = buildPortfolioScorecardZip(items, getDb(), { root, maxScorecards: 3 })
+  if (zip.buffer.readUInt32LE(0) !== 0x04034b50) throw new Error('ZIP inválido')
+  if (zip.fileCount < 6) throw new Error('ZIP com poucos arquivos')
+  ok(`${zip.fileCount} arquivos · ${zip.manifest.scorecardCount} scorecards`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')
