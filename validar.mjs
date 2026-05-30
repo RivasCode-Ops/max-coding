@@ -281,6 +281,16 @@ await step('Quality signals (Fase 21)', async () => {
   ok(`${q.summary.passed}/${q.summary.total} sinais (${q.summary.pct}%)`)
 })
 
+await step('Portfolio goals (Fase 22)', async () => {
+  const { savePortfolioGoals, goalsProgress } = await import('./packages/core/lib/portfolio-goals.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import('./packages/core/lib/portfolio.mjs')
+  const goals = savePortfolioGoals(getDb(), { minHealth: 70, targetHealth: 85 })
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(join(ROOT, '..'))))
+  const p = goalsProgress(items, goals)
+  if (goals.minHealth !== 70) throw new Error('goals não salvos')
+  ok(`metas ${goals.minHealth}/${goals.targetHealth} · ${p.atTarget}/${p.total} no alvo`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

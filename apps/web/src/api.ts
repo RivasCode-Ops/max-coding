@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -56,6 +56,8 @@ export function getPortfolio(root = 'c:\\_PROJETOS') {
     chart?: PortfolioChart
     history?: PortfolioHistory
     heatmap?: PortfolioHeatmap
+    goals?: PortfolioGoals
+    goalsProgress?: PortfolioGoalsProgress
   }>(`/api/portfolio?root=${encodeURIComponent(root)}`)
 }
 
@@ -178,9 +180,26 @@ export function rescanPortfolio(root: string) {
 }
 
 export function getPortfolioAlerts(root: string) {
-  return api<{ root: string; alerts: PortfolioAlert[]; summary: PortfolioAlertsSummary }>(
-    `/api/portfolio/alerts?root=${encodeURIComponent(root)}`,
+  return api<{
+    root: string
+    alerts: PortfolioAlert[]
+    summary: PortfolioAlertsSummary
+    goals?: PortfolioGoals
+    progress?: PortfolioGoalsProgress
+  }>(`/api/portfolio/alerts?root=${encodeURIComponent(root)}`)
+}
+
+export function getPortfolioGoals(root: string) {
+  return api<{ goals: PortfolioGoals; progress: PortfolioGoalsProgress }>(
+    `/api/portfolio/goals?root=${encodeURIComponent(root)}`,
   )
+}
+
+export function savePortfolioGoals(goals: Partial<PortfolioGoals>) {
+  return api<{ goals: PortfolioGoals }>('/api/portfolio/goals', {
+    method: 'POST',
+    body: JSON.stringify(goals),
+  })
 }
 
 export function evolvePortfolioBatch(root: string, dryRun = false, max = 3) {

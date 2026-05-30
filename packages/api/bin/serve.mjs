@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.23.0',
+      version: '0.24.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -207,6 +207,8 @@ async function handle(req, res) {
     const items = mergePortfolio(fromDb, scanned)
     const { buildPortfolioChartData } = await import('../../core/lib/portfolio-chart.mjs')
     const { buildPortfolioHistory } = await import('../../core/lib/portfolio-history.mjs')
+    const { getPortfolioGoals, goalsProgress } = await import('../../core/lib/portfolio-goals.mjs')
+    const goals = getPortfolioGoals(getDb())
     const maxHeatmap = Number(url.searchParams.get('heatmapMax') || 8)
     const includeHeatmap = url.searchParams.get('heatmap') !== '0'
     let heatmap = null
@@ -221,7 +223,25 @@ async function handle(req, res) {
       chart: buildPortfolioChartData(items),
       history: buildPortfolioHistory(getDb(), items),
       heatmap,
+      goals,
+      goalsProgress: goalsProgress(items, goals),
     })
+  }
+
+  if (path === '/api/portfolio/goals' && req.method === 'GET') {
+    const { getPortfolioGoals, goalsProgress } = await import('../../core/lib/portfolio-goals.mjs')
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const local = discoverLocalRepos(root)
+    const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(local))
+    const goals = getPortfolioGoals(getDb())
+    return sendJson(res, 200, { goals, progress: goalsProgress(items, goals) })
+  }
+
+  if (path === '/api/portfolio/goals' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { savePortfolioGoals } = await import('../../core/lib/portfolio-goals.mjs')
+    const goals = savePortfolioGoals(getDb(), body)
+    return sendJson(res, 200, { goals })
   }
 
   if (path === '/api/portfolio/history' && req.method === 'GET') {
@@ -298,8 +318,16 @@ async function handle(req, res) {
     const fromDb = buildPortfolioFromDb(getDb())
     const items = mergePortfolio(fromDb, scanned)
     const { buildPortfolioAlerts } = await import('../../core/lib/portfolio-alerts.mjs')
-    const { alerts, summary } = buildPortfolioAlerts(items, getDb())
-    return sendJson(res, 200, { root, alerts, summary })
+    const { getPortfolioGoals, goalsProgress } = await import('../../core/lib/portfolio-goals.mjs')
+    const goals = getPortfolioGoals(getDb())
+    const { alerts, summary } = buildPortfolioAlerts(items, getDb(), { goals })
+    return sendJson(res, 200, {
+      root,
+      alerts,
+      summary,
+      goals,
+      progress: goalsProgress(items, goals),
+    })
   }
 
   if (path === '/api/evolve' && req.method === 'POST') {

@@ -359,6 +359,22 @@ export function dbExists() {
   return existsSync(DB_PATH)
 }
 
+export function getAppSetting(db, key) {
+  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key)
+  return row?.value ?? null
+}
+
+export function setAppSetting(db, key, value) {
+  db.prepare(
+    `INSERT INTO app_settings (key, value) VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+  ).run(key, value)
+}
+
+export function deleteAppSetting(db, key) {
+  db.prepare('DELETE FROM app_settings WHERE key = ?').run(key)
+}
+
 export function appendWatchLog(db, entry) {
   const message = entry.error || entry.healthSummary || entry.code || ''
   db.prepare(

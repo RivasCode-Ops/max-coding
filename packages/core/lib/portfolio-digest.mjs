@@ -6,6 +6,7 @@ import { buildPortfolioAlerts } from './portfolio-alerts.mjs'
 import { buildPortfolioHistory } from './portfolio-history.mjs'
 import { portfolioSummary } from './portfolio.mjs'
 import { getFeedbackSummary } from './feedback-stats.mjs'
+import { getPortfolioGoals, goalsProgress } from './portfolio-goals.mjs'
 
 export function buildPortfolioDigest(items, db, options = {}) {
   const root = options.root || ''
@@ -16,6 +17,8 @@ export function buildPortfolioDigest(items, db, options = {}) {
     ? buildPortfolioHistory(db, items, { includeSingle: true })
     : { repos: [], summary: { tracked: 0, improving: 0, declining: 0, stable: 0, withHistory: 0 } }
   const feedback = db ? getFeedbackSummary(db) : null
+  const goals = db ? getPortfolioGoals(db) : null
+  const progress = goals ? goalsProgress(items, goals) : null
 
   const declining = history.repos.filter((r) => r.trend === 'down').slice(0, 5)
   const improving = history.repos.filter((r) => r.trend === 'up').slice(0, 5)
@@ -34,6 +37,8 @@ export function buildPortfolioDigest(items, db, options = {}) {
     alerts: { items: alerts.slice(0, 10), summary: alertsSummary },
     history: { summary: history.summary, improving, declining },
     feedback,
+    goals,
+    goalsProgress: progress,
     repos: items
       .filter((i) => typeof i.health === 'number')
       .sort((a, b) => b.health - a.health)
@@ -94,6 +99,16 @@ export function formatPortfolioDigestMarkdown(digest) {
       }
       lines.push('')
     }
+  }
+
+  if (digest.goals?.enabled && digest.goalsProgress) {
+    const p = digest.goalsProgress
+    lines.push('## Metas de health', '')
+    lines.push(`- **Mínimo:** ${digest.goals.minHealth}/100 · **Alvo:** ${digest.goals.targetHealth}/100`, '')
+    lines.push(
+      `- **Na meta alvo:** ${p.atTarget}/${p.total} · **Abaixo do mínimo:** ${p.belowMin} · **Entre mín e alvo:** ${p.underTarget}`,
+      '',
+    )
   }
 
   if (digest.feedback?.total) {

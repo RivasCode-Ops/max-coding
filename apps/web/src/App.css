@@ -681,3 +681,28 @@ tr.portfolio-active td {
 .quality-checks li.gap {
   color: #f87171;
 }
+
+.goals-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin: 10px 0;
+}
+
+.goals-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.goals-row input[type='number'] {
+  width: 64px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #0b1220;
+  color: #fff;
+}

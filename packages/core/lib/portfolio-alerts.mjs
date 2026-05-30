@@ -1,19 +1,26 @@
 /**
- * Alertas de portfolio — Fase 13
+ * Alertas de portfolio — Fase 13 (+ metas Fase 22)
  */
 import { getHealthTrend } from './health-trend.mjs'
 import { getRepositoryBySlug } from './db.mjs'
+import { buildGoalAlerts, getPortfolioGoals } from './portfolio-goals.mjs'
 
 export function buildPortfolioAlerts(items, db, options = {}) {
-  const threshold = options.threshold ?? 70
-  const alerts = []
+  const goals = options.goals ?? (db ? getPortfolioGoals(db) : null)
+  const threshold =
+    options.threshold ?? (goals?.enabled ? goals.minHealth : 70)
+  const alerts = [...(goals?.enabled ? buildGoalAlerts(items, goals) : [])]
 
   for (const item of items) {
     const health = item.health
     const slug = item.slug
     const path = item.path
 
-    if (typeof health === 'number' && health < threshold) {
+    if (
+      typeof health === 'number' &&
+      health < threshold &&
+      !alerts.some((a) => a.slug === slug && a.code === 'below-goal')
+    ) {
       alerts.push({
         level: 'critical',
         slug,
@@ -70,13 +77,15 @@ export function buildPortfolioAlerts(items, db, options = {}) {
   const deduped = dedupeAlerts(alerts)
   deduped.sort((a, b) => levelRank(a.level) - levelRank(b.level))
 
+  const sliced = deduped.slice(0, options.max ?? 20)
   return {
-    alerts: deduped.slice(0, options.max ?? 20),
+    alerts: sliced,
+    goals: goals || null,
     summary: {
-      critical: deduped.filter((a) => a.level === 'critical').length,
-      warning: deduped.filter((a) => a.level === 'warning').length,
-      info: deduped.filter((a) => a.level === 'info').length,
-      total: deduped.length,
+      critical: sliced.filter((a) => a.level === 'critical').length,
+      warning: sliced.filter((a) => a.level === 'warning').length,
+      info: sliced.filter((a) => a.level === 'info').length,
+      total: sliced.length,
     },
   }
 }

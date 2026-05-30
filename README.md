@@ -28,11 +28,13 @@ npm run portfolio-history -- c:\_PROJETOS      # tendências de health no portfo
 npm run portfolio-digest -- c:\_PROJETOS       # relatório executivo do portfolio
 npm run portfolio-heatmap -- c:\_PROJETOS 8    # heatmap 12 categorias × repos
 npm run quality-signals -- c:\_PROJETOS\Meu-Repo # checklist testes, CI, docs, DX
+npm run portfolio-goals                    # ver metas de health
+npm run portfolio-goals -- set 75 90     # meta mín 75 · alvo 90
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.23)
+## V1 PRD — status (v0.24)
 
 | Requisito | Status |
 |-----------|--------|
@@ -65,6 +67,8 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 18 History** | ✅ histórico multi-repo + sparklines na UI |
 | **Fase 19 Digest** | ✅ relatório executivo exportável do portfolio |
 | **Fase 20 Heatmap** | ✅ matriz 12 categorias × repos na UI |
+| **Fase 21 Quality** | ✅ sinais de qualidade (testes, CI, docs, DX, segurança) |
+| **Fase 22 Goals** | ✅ metas mín/alvo de health + alertas no portfolio |
 
 ### Fase 3 (local-first)
 
@@ -221,6 +225,14 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Checklist de qualidade | `npm run quality-signals -- <path>` |
 | Por análise | campo `qualitySignals` no scan · `GET /api/quality-signals?path=` |
 | UI + relatório | Painel **Sinais de qualidade** · exportar relatório |
+
+### Fase 22 (portfolio goals)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Metas mín/alvo | `npm run portfolio-goals` · `npm run portfolio-goals -- set 75 90` |
+| Persistência | `GET/POST /api/portfolio/goals` |
+| Alertas + progresso | integrado em alertas/digest · UI **Metas de health** |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

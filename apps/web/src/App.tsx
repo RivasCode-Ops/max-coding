@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, savePortfolioGoals, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
 import PortfolioHistoryPanel from './PortfolioHistoryPanel'
@@ -24,6 +24,8 @@ export default function App() {
     chart?: PortfolioChart
     history?: PortfolioHistory
     heatmap?: PortfolioHeatmap
+    goals?: PortfolioGoals
+    goalsProgress?: PortfolioGoalsProgress
   } | null>(null)
   const [prOwnerRepo, setPrOwnerRepo] = useState('RivasCode-Ops/Quadro-Negro')
   const [prNumber, setPrNumber] = useState('1')
@@ -43,7 +45,18 @@ export default function App() {
   const [compareTarget, setCompareTarget] = useState('')
   const [compareResult, setCompareResult] = useState<RepoCompareResult | null>(null)
   const [evolveResult, setEvolveResult] = useState<EvolveResult | null>(null)
-  const [portfolioAlerts, setPortfolioAlerts] = useState<{ alerts: PortfolioAlert[]; summary: PortfolioAlertsSummary } | null>(null)
+  const [portfolioAlerts, setPortfolioAlerts] = useState<{
+    alerts: PortfolioAlert[]
+    summary: PortfolioAlertsSummary
+    goals?: PortfolioGoals
+    progress?: PortfolioGoalsProgress
+  } | null>(null)
+  const [portfolioGoals, setPortfolioGoals] = useState<PortfolioGoals>({
+    minHealth: 70,
+    targetHealth: 85,
+    enabled: true,
+  })
+  const [goalsProgress, setGoalsProgress] = useState<PortfolioGoalsProgress | null>(null)
   const [watchOn, setWatchOn] = useState(false)
   const [watchInterval, setWatchInterval] = useState(300)
   const [watchLog, setWatchLog] = useState<{ at: string; health: string; delta?: number }[]>([])
@@ -98,9 +111,26 @@ export default function App() {
   async function refreshPortfolio() {
     try {
       const p = await getPortfolio(portfolioRoot)
-      setPortfolio({ summary: p.summary, items: p.items, chart: p.chart, history: p.history, heatmap: p.heatmap })
+      setPortfolio({
+        summary: p.summary,
+        items: p.items,
+        chart: p.chart,
+        history: p.history,
+        heatmap: p.heatmap,
+        goals: p.goals,
+        goalsProgress: p.goalsProgress,
+      })
+      if (p.goals) setPortfolioGoals(p.goals)
+      if (p.goalsProgress) setGoalsProgress(p.goalsProgress)
       const a = await getPortfolioAlerts(portfolioRoot)
-      setPortfolioAlerts({ alerts: a.alerts, summary: a.summary })
+      setPortfolioAlerts({
+        alerts: a.alerts,
+        summary: a.summary,
+        goals: a.goals,
+        progress: a.progress,
+      })
+      if (a.goals) setPortfolioGoals(a.goals)
+      if (a.progress) setGoalsProgress(a.progress)
     } catch {
       setPortfolio(null)
       setPortfolioAlerts(null)
@@ -772,6 +802,62 @@ export default function App() {
 
       <section className="card">
         <h2>Portfolio</h2>
+        <div className="goals-row">
+          <label>
+            Meta mín
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={portfolioGoals.minHealth}
+              onChange={(e) => setPortfolioGoals((g) => ({ ...g, minHealth: Number(e.target.value) }))}
+            />
+          </label>
+          <label>
+            Meta alvo
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={portfolioGoals.targetHealth}
+              onChange={(e) => setPortfolioGoals((g) => ({ ...g, targetHealth: Number(e.target.value) }))}
+            />
+          </label>
+          <label className="inline-check">
+            <input
+              type="checkbox"
+              checked={portfolioGoals.enabled}
+              onChange={(e) => setPortfolioGoals((g) => ({ ...g, enabled: e.target.checked }))}
+            />
+            Metas ativas
+          </label>
+          <button
+            type="button"
+            className="tiny secondary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                const r = await savePortfolioGoals(portfolioGoals)
+                setPortfolioGoals(r.goals)
+                await refreshPortfolio()
+                alert('Metas salvas')
+              } catch (e) {
+                alert(e instanceof Error ? e.message : 'Erro')
+              } finally {
+                setBusy(false)
+              }
+            }}
+          >
+            Salvar metas
+          </button>
+        </div>
+        {goalsProgress && (
+          <p className="hint">
+            Progresso: {goalsProgress.atTarget}/{goalsProgress.total} na meta alvo · {goalsProgress.belowMin}{' '}
+            abaixo do mínimo
+          </p>
+        )}
         <label>Pasta raiz</label>
         <input value={portfolioRoot} onChange={(e) => setPortfolioRoot(e.target.value)} />
         <button type="button" className="secondary" disabled={busy} onClick={() => refresh()}>

@@ -166,6 +166,12 @@
 - `npm run quality-signals` · `GET /api/quality-signals`
 - UI **Sinais de qualidade** + inclusão no relatório exportado
 
+### Bloco X — Fase 22 Goals (v0.24) ✅
+
+- `portfolio-goals.mjs` — meta mínima e alvo de health (SQLite `app_settings`)
+- `npm run portfolio-goals` · `GET/POST /api/portfolio/goals`
+- Alertas `below-goal` / `under-target` · UI configurar metas
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -193,3 +199,4 @@
 - [x] Fase 19 Digest (relatório executivo do portfolio)
 - [x] Fase 20 Heatmap (12 categorias × repos no portfolio)
 - [x] Fase 21 Quality (sinais de qualidade explícitos)
+- [x] Fase 22 Goals (metas de health no portfolio)

@@ -102,6 +102,20 @@ export type PortfolioAlertsSummary = {
   total: number
 }
 
+export type PortfolioGoals = {
+  minHealth: number
+  targetHealth: number
+  enabled: boolean
+}
+
+export type PortfolioGoalsProgress = {
+  total: number
+  atTarget: number
+  atMin: number
+  belowMin: number
+  underTarget: number
+}
+
 export type PortfolioChartBar = {
   slug: string
   health: number

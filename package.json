@@ -1,6 +1,6 @@
 {
   "name": "max-coding",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "private": true,
   "description": "Max Stack — auditoria evolutiva local-first de repositórios",
   "type": "module",
@@ -34,6 +34,7 @@
     "portfolio-digest": "node packages/core/bin/portfolio-digest.mjs",
     "portfolio-heatmap": "node packages/core/bin/portfolio-heatmap.mjs",
     "quality-signals": "node packages/core/bin/quality-signals.mjs",
+    "portfolio-goals": "node packages/core/bin/portfolio-goals.mjs",
     "test": "node --test --test-concurrency=1 tests/**/*.test.mjs"
   }
 }
