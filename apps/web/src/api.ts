@@ -196,3 +196,7 @@ export function runPortfolioWatch(root: string, dryRun = false, max = 5) {
 export function getPortfolioWatchLog(limit = 20) {
   return api<{ items: WatchLogEntry[] }>(`/api/portfolio/watch/log?limit=${limit}`)
 }
+
+export function getPortfolioDigest(root = 'c:\\_PROJETOS') {
+  return api<{ root: string; markdown: string }>(`/api/portfolio/digest?root=${encodeURIComponent(root)}&format=md`)
+}

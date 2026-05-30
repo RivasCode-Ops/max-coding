@@ -148,6 +148,12 @@
 - `GET /api/portfolio/history` · campo `history` em `GET /api/portfolio`
 - `npm run portfolio-history` · UI painel com sparklines
 
+### Bloco U — Fase 19 Digest (v0.21) ✅
+
+- `portfolio-digest.mjs` — relatório executivo markdown do portfolio
+- `npm run portfolio-digest` · `GET /api/portfolio/digest`
+- UI **Exportar digest** no portfolio
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -172,3 +178,4 @@
 - [x] Fase 16 Plan (pacote plan + API/CLI/UI, apply sob autorização)
 - [x] Fase 17 Watch portfolio (re-scan alertas + log SQLite + UI)
 - [x] Fase 18 History (histórico multi-repo + sparklines na UI)
+- [x] Fase 19 Digest (relatório executivo do portfolio)

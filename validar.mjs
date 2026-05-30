@@ -251,6 +251,17 @@ await step('Portfolio history (Fase 18)', async () => {
   ok(`${summary.tracked} repos no histórico · ${summary.withHistory} com evolução`)
 })
 
+await step('Portfolio digest (Fase 19)', async () => {
+  const { buildPortfolioDigest, formatPortfolioDigestMarkdown } = await import('./packages/core/lib/portfolio-digest.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import('./packages/core/lib/portfolio.mjs')
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const digest = buildPortfolioDigest(items, getDb(), { root })
+  const md = formatPortfolioDigestMarkdown(digest)
+  if (!md.includes('Digest do portfolio')) throw new Error('digest inválido')
+  ok(`digest ${digest.summary.total} repos · média ${digest.summary.averageHealth}`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

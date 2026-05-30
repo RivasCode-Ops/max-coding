@@ -25,11 +25,12 @@ npm run evolve-batch -- c:\_PROJETOS --dry-run  # preview evolve críticos do po
 npm run plan -- c:\_PROJETOS\Meu-Repo           # pacote plan (backlog + PR plan + QA)
 npm run watch-portfolio -- c:\_PROJETOS 1800   # re-scan repos com alertas
 npm run portfolio-history -- c:\_PROJETOS      # tendências de health no portfolio
+npm run portfolio-digest -- c:\_PROJETOS       # relatório executivo do portfolio
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.20)
+## V1 PRD — status (v0.21)
 
 | Requisito | Status |
 |-----------|--------|
@@ -60,6 +61,7 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 16 Plan** | ✅ pacote plan (backlog + PR plan + checklist + QA gate) |
 | **Fase 17 Watch** | ✅ monitorar portfolio + log SQLite + CLI/API |
 | **Fase 18 History** | ✅ histórico multi-repo + sparklines na UI |
+| **Fase 19 Digest** | ✅ relatório executivo exportável do portfolio |
 
 ### Fase 3 (local-first)
 
@@ -192,6 +194,14 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Tendências por repo | `npm run portfolio-history -- [root]` |
 | Histórico agregado | `GET /api/portfolio/history` · campo `history` no portfolio |
 | Sparklines na UI | Painel **Histórico multi-repo** |
+
+### Fase 19 (portfolio digest)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Relatório executivo | `npm run portfolio-digest -- [root]` |
+| Markdown JSON | `GET /api/portfolio/digest` · `?format=md` |
+| Copiar na UI | Botão **Exportar digest** |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

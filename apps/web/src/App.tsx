@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
 import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
@@ -427,6 +427,19 @@ export default function App() {
     }
   }
 
+  async function exportPortfolioDigest() {
+    setBusy(true)
+    try {
+      const r = await getPortfolioDigest(portfolioRoot)
+      await navigator.clipboard.writeText(r.markdown)
+      alert('Digest do portfolio copiado!')
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function runBatchEvolve(dryRun: boolean) {
     if (!portfolioAlerts?.summary.critical) {
       return alert('Nenhum alerta crítico no portfolio')
@@ -763,6 +776,9 @@ export default function App() {
         </button>
         <button type="button" className="secondary" disabled={busy} onClick={runPortfolioRescan}>
           Re-scan portfolio
+        </button>
+        <button type="button" className="tiny secondary" disabled={busy} onClick={exportPortfolioDigest}>
+          Exportar digest
         </button>
         <label className="inline-check">
           <input
