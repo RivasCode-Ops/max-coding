@@ -228,7 +228,7 @@ await step('Plan package (Fase 16)', async () => {
   const result = await analyzeRepository(ROOT, { mode: 'deep', auditMode: 'plan', writeReports: false, githubSearch: false })
   const pkg = buildPlanPackage(result)
   const md = formatPlanMarkdown(result)
-  if (!pkg.authorization.applyAllowed || !md.includes('Modo plan')) throw new Error('plan package inválido')
+  if (pkg.authorization.applyAllowed || !md.includes('Modo plan')) throw new Error('plan package inválido')
   ok(`plan ${pkg.counts.backlog} backlog · ${pkg.counts.prCommits} commits PR`)
 })
 

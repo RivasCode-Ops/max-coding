@@ -1,31 +1,39 @@
-# HANDOFF — max-coding
+# HANDOFF — max-coding (MAX)
 
-**Atualizado:** 2026-05-28  
-**Fase:** 1 parcial (audit pipeline + gstack mapping)
+**Atualizado:** 2026-05-30  
+**Versão:** v0.24 · **PRD V1:** fases 3–22 concluídas
 
-## Feito
+## Feito (V1 consolidada)
 
-- Mapeamento [gstack → max-coding](./docs/gstack-mapping.md)
-- Orquestração multi-papel + prompts em `docs/agents/`
-- CLI `npm run audit -- <path>` (Scout → Hunt → Audit → Plan → VERIFY checklist)
-- Catálogo `practices-vite-kanban.json` (Kanri, Kanvana, Wekan)
-- `.cursor/rules/max-coding.mdc` atualizado
+- Scanner local/GitHub, 12 categorias, findings, pipeline por papéis, SQLite (`data/max.db`)
+- CLI: `quick`, `deep`, `audit`, `plan`, `portfolio`, `evolve`, `evolve-batch`, `watch-portfolio`, digest/heatmap/history/goals
+- UI React (`npm start` → http://localhost:3847)
+- Catálogos OSS (vite, next, streamlit, node) + GitHub Search opcional (Deep)
+- Portfolio multi-repo, alertas, gráficos, metas de health, qualidade (16 sinais)
+- Modos: **audit** (default, só relatório) · **plan** (backlog + PR plan) · apply só com autorização
 
-## Comando principal
+Referência única: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md) · detalhe por fase: [docs/PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md)
+
+## Comandos principais
 
 ```bash
 cd c:\_PROJETOS\max-coding
+npm run validar
+npm start
+npm run quick -- c:\_PROJETOS\Meu-Repo
 npm run audit -- c:\_PROJETOS\Quadro-Negro
+npm run plan -- c:\_PROJETOS\Meu-Repo
+npm run portfolio -- c:\_PROJETOS
 ```
 
-Ler saída: `reports/quadro-negro/handoff.json` e `report-*.md`
+Audit no alvo: ler `reports/<slug>/handoff.json` e `report-*.md`
 
-## Próximo
+## Próximo (pós-v0.24, não bloqueia o marco)
 
-1. GitHub search API no Pattern Hunter (refs dinâmicas)
-2. Catálogos: `practices-next.md`, `practices-streamlit.json`
-3. `gh auth login` + push repo RivasCode-Ops/max-coding
+1. Roadmap V2 (notificações externas, cron, apply genérico de backlog)
+2. Uso operacional estável em `c:\_PROJETOS` + `gh auth` em produção
+3. Manter docs alinhados a cada marco (`v0.25` = docs/fixes menores)
 
 ## Modo Cursor
 
-Abrir workspace `max-coding`; ao implementar no Quadro-Negro, usar `@docs/agents/qa-verifier.md` após cada item P1.
+Workspace `max-coding`; ao implementar no repo **alvo**, ler `handoff.json` e usar `@docs/agents/qa-verifier.md` após cada item P1. Não apply automático em modo audit.

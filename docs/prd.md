@@ -1,5 +1,7 @@
 # PRD — max-coding
 
+> **Status 2026-05-30:** critérios MVP (Fase 1) e expansões V1 (fases 2–22) **concluídos** em v0.24. Detalhe de entregas: [PRD-MAX-STACK-ALIGNMENT.md](./PRD-MAX-STACK-ALIGNMENT.md). Pendências pós-marco: [LEVANTAMENTO.md](./LEVANTAMENTO.md).
+
 ## 1. Objetivo
 
 Entregar um pipeline repetível: **repo in → perfil técnico → padrões internos/externos → recomendações priorizadas**.
@@ -68,16 +70,18 @@ Ver `docs/gstack-mapping.md`. Papéis não são LLMs separados na v1 — são **
 
 ## 6. Critérios de aceite (MVP — Fase 1)
 
-- [ ] CLI `scan <path>` gera `profile.json`
-- [ ] CLI `recommend <path>` gera `recommendations.json` + `report.md`
-- [ ] Pelo menos 5 recomendações acionáveis em repo piloto (Quadro-Negro)
-- [ ] Cada recomendação tem impacto, esforço, risco, prioridade
+- [x] CLI `scan` / `quick` / `deep` gera perfil e relatórios (`profile.json`, `recommendations`, `report-*.md`)
+- [x] Pipeline `audit` / `recommend` integrado ao SQLite e UI
+- [x] Recomendações acionáveis no piloto (Quadro-Negro) e self-scan
+- [x] Cada recomendação com impacto, esforço, risco, prioridade
 
-## 7. Fora de escopo v1
+## 7. Fora de escopo v1 (inalterado como limite de produto)
 
-- UI web completa
-- Auto-PR
-- Análise AST profunda (v2)
+- Auto-PR / merge automático no repo alvo
+- Análise AST profunda (V2)
+- SaaS multi-tenant
+
+*Nota:* UI web (`apps/web`) foi entregue na V1 consolidada (v0.24); o item histórico “UI web completa” no PRD original refere-se ao escopo inicial mínimo, hoje superado.
 
 ## 8. Métricas de sucesso
 

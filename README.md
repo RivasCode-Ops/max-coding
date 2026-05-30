@@ -36,6 +36,8 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
 ## V1 PRD — status (v0.24)
 
+Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
+
 | Requisito | Status |
 |-----------|--------|
 | Repo local + URL GitHub | ✅ clone em `data/repos/` |

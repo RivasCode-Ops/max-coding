@@ -66,9 +66,8 @@ Ver [gstack-mapping.md](./gstack-mapping.md).
 
 ## Stack alvo (produto MAX)
 
-- **V1 atual:** Node ESM, CLI, relatórios JSON/Markdown
-- **V1.5:** SQLite local (`data/max.db`)
-- **V2 UI:** React + TypeScript em `apps/web/`
+- **V1 (v0.24):** Node ESM, CLI, relatórios JSON/Markdown, SQLite (`data/max.db`), UI React + TypeScript em `apps/web/`
+- **V2 (planejado):** notificações externas, serviço agendado, apply genérico, AST — ver [LEVANTAMENTO.md](./LEVANTAMENTO.md)
 
 ## Fora de escopo V1
 
