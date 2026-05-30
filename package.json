@@ -1,0 +1,16 @@
+{
+  "name": "max-coding",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MAX — auditor técnico evolutivo de repositórios",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "scan": "node packages/repo-scanner/bin/scan.mjs",
+    "quick": "node packages/core/bin/run-quick.mjs",
+    "deep": "node packages/core/bin/run-audit.mjs",
+    "audit": "node packages/core/bin/run-audit.mjs"
+  }
+}

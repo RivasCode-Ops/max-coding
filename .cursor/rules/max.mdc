@@ -1,0 +1,29 @@
+---
+description: MAX — auditor evolutivo de repositórios (multi-papel, gstack-inspired)
+alwaysApply: true
+---
+
+# MAX
+
+Produto: **MAX** · Repo: `max-coding`
+
+## Núcleo
+Scanner → health score → pattern search → recommender → `reports/<slug>/`.
+
+## CLI
+```bash
+npm run quick -- c:\caminho\do\repo   # Quick Scan
+npm run deep -- c:\caminho\do\repo    # Deep Analysis
+```
+
+## Orquestração
+Papéis: Orchestrator, Repo Scout, Pattern Hunter, Architecture Auditor, Patch Planner, QA Verifier.  
+Ver `docs/gstack-mapping.md`, `docs/COPY-PRODUTO.md`.
+
+## Modos
+- **audit** (default): só relatório — não editar repo alvo
+- **plan**: + backlog.json
+
+## Regras
+- Evidência obrigatória por achado
+- Não apply automático no repo alvo

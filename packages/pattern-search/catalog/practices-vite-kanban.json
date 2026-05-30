@@ -1,0 +1,87 @@
+{
+  "stack": "vite",
+  "domain": "kanban-productivity",
+  "references": [
+    {
+      "repo": "kanriapp/kanri",
+      "url": "https://github.com/kanriapp/kanri",
+      "patterns": ["offline-first", "subtasks", "due-dates", "tags", "export-json", "keyboard-shortcuts"]
+    },
+    {
+      "repo": "mdiener21/kanvana",
+      "url": "https://github.com/mdiener21/kanvana",
+      "patterns": ["swimlanes", "calendar-view", "activity-log", "drag-drop", "local-indexeddb"]
+    },
+    {
+      "repo": "wekan/wekan",
+      "url": "https://github.com/wekan/wekan",
+      "patterns": ["automation-rules", "checklists", "labels", "swimlanes"]
+    }
+  ],
+  "practices": [
+    {
+      "id": "test_script",
+      "category": "testes",
+      "title": "Script de teste automatizado",
+      "requiredSignalAbsent": "has_tests_or_validar",
+      "alsoIfSignal": "gap_no_test_script",
+      "referencePattern": "Repos Vite maduros expõem vitest ou node:test no package.json",
+      "suggestedUpgrade": "Adicionar vitest + 3 testes: persistência localStorage, filtros, export/import JSON",
+      "impact": "alto",
+      "effort": "medio",
+      "risk": "baixo"
+    },
+    {
+      "id": "ci_workflow",
+      "category": "infraestrutura",
+      "title": "CI mínima (build + test)",
+      "requiredSignalAbsent": "has_ci",
+      "referencePattern": "Projetos OSS publicam .github/workflows para build em PR",
+      "suggestedUpgrade": "Workflow GitHub Actions: npm ci, npm run build, npm test",
+      "impact": "alto",
+      "effort": "baixo",
+      "risk": "baixo"
+    },
+    {
+      "id": "cursor_rules",
+      "category": "dx",
+      "title": "Regras Cursor por projeto",
+      "requiredSignalAbsent": "has_cursor_rules",
+      "referencePattern": "ECC/gstack: contexto persistente para agentes via .cursor/rules",
+      "suggestedUpgrade": "Criar .cursor/rules/projeto.mdc com stack, armadilhas e comandos de validação",
+      "impact": "medio",
+      "effort": "baixo",
+      "risk": "baixo"
+    },
+    {
+      "id": "drag_drop",
+      "category": "arquitetura",
+      "title": "Drag-and-drop nativo entre colunas",
+      "referencePattern": "kanvana/kanri: DnD é padrão de UX em Kanban maduro",
+      "suggestedUpgrade": "HTML5 DnD ou pointer events; atualizar status + ordem no state",
+      "impact": "alto",
+      "effort": "medio",
+      "risk": "medio"
+    },
+    {
+      "id": "activity_log",
+      "category": "observabilidade",
+      "title": "Histórico por card (activity log)",
+      "referencePattern": "kanvana registra mutações por tarefa",
+      "suggestedUpgrade": "Array activity[] por card: timestamp, campo, valor anterior/novo",
+      "impact": "medio",
+      "effort": "medio",
+      "risk": "baixo"
+    },
+    {
+      "id": "automation_rules",
+      "category": "padronizacao",
+      "title": "Regras automáticas simples (mini-IFTTT)",
+      "referencePattern": "wekan IFTTT: trigger ao mover card → aplicar label/checklist",
+      "suggestedUpgrade": "Regra v1: ao mover para Concluido → marcar checklist 100%",
+      "impact": "medio",
+      "effort": "alto",
+      "risk": "medio"
+    }
+  ]
+}

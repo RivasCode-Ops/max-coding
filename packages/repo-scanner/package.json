@@ -1,0 +1,9 @@
+{
+  "name": "@max-coding/repo-scanner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "max-scan": "bin/scan.mjs"
+  }
+}
