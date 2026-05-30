@@ -20,6 +20,8 @@ export function getDb() {
   if (dbInstance) return dbInstance
   mkdirSync(DATA_DIR, { recursive: true })
   dbInstance = new DatabaseSync(DB_PATH)
+  dbInstance.exec('PRAGMA journal_mode = WAL')
+  dbInstance.exec('PRAGMA busy_timeout = 5000')
   migrate(dbInstance)
   return dbInstance
 }
@@ -123,6 +125,17 @@ function migrate(db) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_analyses_created ON analyses(created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS recommendation_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recommendation_id TEXT NOT NULL,
+      analysis_id INTEGER,
+      useful INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (analysis_id) REFERENCES analyses(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_feedback_rec ON recommendation_feedback(recommendation_id);
   `)
 
   try {
@@ -281,6 +294,36 @@ export function getLatestAnalysisForRepo(db, repoId) {
   if (!row) return null
   const data = JSON.parse(row.payload)
   return { ...data, analysisId: row.id }
+}
+
+export function getRepositoryBySlug(db, slug) {
+  return db.prepare('SELECT * FROM repositories WHERE slug = ?').get(slug)
+}
+
+export function saveFeedback(db, { recommendationId, analysisId, useful }) {
+  const createdAt = new Date().toISOString()
+  db.prepare(
+    `INSERT INTO recommendation_feedback (recommendation_id, analysis_id, useful, created_at) VALUES (?, ?, ?, ?)`,
+  ).run(recommendationId, analysisId ?? null, useful ? 1 : 0, createdAt)
+  return { recommendationId, analysisId, useful, createdAt }
+}
+
+export function listFeedbackForAnalysis(db, analysisId) {
+  return db
+    .prepare(`SELECT * FROM recommendation_feedback WHERE analysis_id = ? ORDER BY created_at DESC`)
+    .all(analysisId)
+}
+
+export function getFeedbackStats(db, recommendationId) {
+  const rows = db
+    .prepare(`SELECT useful, COUNT(*) AS n FROM recommendation_feedback WHERE recommendation_id = ? GROUP BY useful`)
+    .all(recommendationId)
+  const stats = { useful: 0, notUseful: 0 }
+  for (const r of rows) {
+    if (r.useful) stats.useful = r.n
+    else stats.notUseful = r.n
+  }
+  return stats
 }
 
 export function dbExists() {

@@ -40,6 +40,24 @@ export type AnalysisResult = {
   }
   cursorRules?: string
   executiveSummary?: { topGaps: string[]; stack: string }
+  analysisId?: number
+  structure?: {
+    fileCount: number
+    totalLines: number
+    hotspots: { file: string; lines: number; imports: number }[]
+  }
+  repoValidation?: {
+    ok: boolean
+    skipped?: boolean
+    message?: string
+    results: { script: string; ok: boolean; durationMs: number }[]
+  }
+  healthTrend?: {
+    points: { id: number; health_overall: number; health_grade: string; created_at: string }[]
+    trend: 'up' | 'down' | 'stable'
+    delta: number
+  }
+  rulesApplied?: { written: string; filename: string }
 }
 
 export type HistoryItem = {

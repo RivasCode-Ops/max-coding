@@ -120,3 +120,12 @@ export function verifyFindings(findings) {
   }
   return { ok: issues.length === 0, issues }
 }
+
+export function dedupeFindings(arr) {
+  const seen = new Set()
+  return arr.filter((f) => {
+    if (seen.has(f.title)) return false
+    seen.add(f.title)
+    return true
+  })
+}

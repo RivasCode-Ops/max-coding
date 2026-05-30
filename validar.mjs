@@ -33,7 +33,7 @@ async function step(title, fn) {
 console.log('Max Stack validar — checagem local\n')
 
 await step('Testes unitários', async () => {
-  const r = spawnSync(process.execPath, ['--test', 'tests/**/*.test.mjs'], {
+  const r = spawnSync(process.execPath, ['--test', '--test-concurrency=1', 'tests/**/*.test.mjs'], {
     cwd: ROOT,
     encoding: 'utf8',
   })
@@ -64,7 +64,15 @@ await step('Deep analysis piloto', async () => {
   }
   const result = await analyzeRepository(pilot, { mode: 'deep', writeReports: false, githubSearch: false })
   if (result.health.overall < 70) throw new Error(`Quadro-Negro health ${result.health.summary}`)
-  ok(`${result.repo.slug} ${result.health.summary} · ${result.recommendations.length} recs · diff ${result.scanDiff?.hasPrevious ? 'sim' : 'primeira'}`)
+  if (!result.structure) throw new Error('structure analyzer não integrado')
+  ok(`${result.repo.slug} ${result.health.summary} · ${result.recommendations.length} recs · structure ${result.structure.fileCount} files · diff ${result.scanDiff?.hasPrevious ? 'sim' : 'primeira'}`)
+})
+
+await step('Structure analyzer (self)', async () => {
+  const { analyzeStructure } = await import('./packages/core/lib/structure-analyzer.mjs')
+  const s = analyzeStructure(ROOT)
+  if (s.fileCount < 5) throw new Error('structure fileCount baixo')
+  ok(`${s.fileCount} arquivos · ${s.findings.length} achados estruturais`)
 })
 
 closeDb()

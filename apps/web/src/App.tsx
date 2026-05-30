@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { analyze, getAnalysis, getStatus, listHistory } from './api'
+import { analyze, applyRules, getAnalysis, getStatus, getTrend, listHistory, sendFeedback, validateRepo } from './api'
 import type { AnalysisResult, HistoryItem } from './types'
 import './App.css'
 
@@ -9,6 +9,9 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
+  const [trend, setTrend] = useState<{ points: { health_overall: number; created_at: string }[]; trend: string; delta: number } | null>(null)
+  const [validation, setValidation] = useState<AnalysisResult['repoValidation'] | null>(null)
+  const [feedbackSent, setFeedbackSent] = useState<Record<string, 'up' | 'down'>>({})
 
   useEffect(() => {
     refresh()
@@ -25,12 +28,21 @@ export default function App() {
     }
   }
 
-  async function run(mode: 'quick' | 'deep') {
+  async function run(mode: 'quick' | 'deep', opts?: { validateRepo?: boolean; applyRules?: boolean }) {
     if (!repoPath.trim()) return alert('Informe caminho ou URL GitHub')
     setBusy(true)
+    setValidation(null)
     try {
-      const res = await analyze(repoPath.trim(), mode)
-      setResult(res.data)
+      const res = await analyze(repoPath.trim(), mode, opts)
+      const data = { ...res.data, analysisId: res.data.analysisId ?? res.id }
+      setResult(data)
+      if (data.repo?.slug) {
+        try {
+          setTrend(await getTrend(data.repo.slug))
+        } catch {
+          setTrend(data.healthTrend || null)
+        }
+      }
       await refresh()
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erro')
@@ -39,10 +51,54 @@ export default function App() {
     }
   }
 
+  async function runValidate() {
+    if (!repoPath.trim()) return
+    setBusy(true)
+    try {
+      setValidation(await validateRepo(repoPath.trim()))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runApplyRules() {
+    if (!result?.analysisId) return alert('Faça uma análise primeiro')
+    setBusy(true)
+    try {
+      const applied = await applyRules(result.analysisId)
+      alert(`Rules escritas em:\n${applied.written}`)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function feedback(recId: string, useful: boolean) {
+    if (!result) return
+    const fullId = result.analysisId ? `${result.analysisId}-${recId}` : recId
+    try {
+      await sendFeedback(fullId, result.analysisId, useful)
+      setFeedbackSent((s) => ({ ...s, [recId]: useful ? 'up' : 'down' }))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    }
+  }
+
   async function load(id: number) {
     const row = await getAnalysis(id)
-    setResult(row.data)
+    const data = { ...row.data, analysisId: id }
+    setResult(data)
     if (row.data?.repo?.path) setRepoPath(row.data.repo.path)
+    if (row.slug) {
+      try {
+        setTrend(await getTrend(row.slug))
+      } catch {
+        setTrend(null)
+      }
+    }
   }
 
   return (
@@ -67,8 +123,24 @@ export default function App() {
           <button disabled={busy} className="secondary" onClick={() => run('deep')}>
             Deep Analysis
           </button>
+          <button disabled={busy} className="secondary" onClick={runValidate}>
+            Validar repo
+          </button>
         </div>
         {busy && <p className="busy">Analisando…</p>}
+        {validation && (
+          <div className="validation">
+            <strong>Validação:</strong>{' '}
+            {validation.skipped ? validation.message : validation.ok ? 'OK' : 'Falhou'}
+            <ul>
+              {validation.results?.map((r) => (
+                <li key={r.script} className={r.ok ? 'ok' : 'fail'}>
+                  npm run {r.script} — {r.ok ? 'OK' : 'FAIL'} ({r.durationMs}ms)
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {result && (
@@ -106,6 +178,68 @@ export default function App() {
             </ul>
           </section>
 
+          {trend && trend.points.length > 0 && (
+            <section className="card">
+              <h2>Tendência de health</h2>
+              <p>
+                {trend.trend === 'up' && '↑ Subindo'}
+                {trend.trend === 'down' && '↓ Caindo'}
+                {trend.trend === 'stable' && '→ Estável'} · delta {trend.delta >= 0 ? '+' : ''}
+                {trend.delta} pts
+              </p>
+              <table className="trend-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Health</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trend.points.map((p, i) => (
+                    <tr key={i}>
+                      <td>{new Date(p.created_at).toLocaleString('pt-BR')}</td>
+                      <td>{p.health_overall}/100</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
+          {result.structure && (
+            <section className="card">
+              <h2>Estrutura ({result.structure.fileCount} arquivos)</h2>
+              <p>{result.structure.totalLines.toLocaleString('pt-BR')} linhas de código</p>
+              {result.structure.hotspots?.length > 0 && (
+                <>
+                  <strong>Hotspots:</strong>
+                  <ul>
+                    {result.structure.hotspots.map((h) => (
+                      <li key={h.file}>
+                        {h.file} — {h.lines} linhas · {h.imports} imports
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
+
+          {result.repoValidation && !result.repoValidation.skipped && (
+            <section className="card">
+              <h2>Validação no repo</h2>
+              <p className={result.repoValidation.ok ? 'ok-text' : 'fail-text'}>
+                {result.repoValidation.ok ? 'Scripts OK' : 'Algum script falhou'}
+              </p>
+              <ul>
+                {result.repoValidation.results.map((r) => (
+                  <li key={r.script} className={r.ok ? 'ok' : 'fail'}>
+                    npm run {r.script} — {r.ok ? 'OK' : 'FAIL'}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           {result.scanDiff?.hasPrevious && (
             <section className="card">
               <h2>Diff vs scan anterior (#{result.scanDiff.previousAnalysisId})</h2>
@@ -186,6 +320,22 @@ export default function App() {
                   [P{r.priority}] {r.title}
                 </strong>
                 <p>{r.suggestedUpgrade || r.problem}</p>
+                <div className="row feedback-row">
+                  <button
+                    type="button"
+                    className={`tiny ${feedbackSent[r.id] === 'up' ? 'active' : ''}`}
+                    onClick={() => feedback(r.id, true)}
+                  >
+                    Útil
+                  </button>
+                  <button
+                    type="button"
+                    className={`tiny secondary ${feedbackSent[r.id] === 'down' ? 'active' : ''}`}
+                    onClick={() => feedback(r.id, false)}
+                  >
+                    Não útil
+                  </button>
+                </div>
               </article>
             ))}
           </section>
@@ -224,17 +374,22 @@ export default function App() {
           {result.cursorRules && (
             <section className="card">
               <h2>Cursor Rules (gerado)</h2>
-              <p className="note">Copie para .cursor/rules/ no repo analisado</p>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  navigator.clipboard.writeText(result.cursorRules || '')
-                  alert('Copiado!')
-                }}
-              >
-                Copiar rules
-              </button>
+              <p className="note">Copie ou aplique em .cursor/rules/ no repo analisado</p>
+              <div className="row">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.cursorRules || '')
+                    alert('Copiado!')
+                  }}
+                >
+                  Copiar rules
+                </button>
+                <button type="button" className="secondary" disabled={busy} onClick={runApplyRules}>
+                  Aplicar no repo
+                </button>
+              </div>
               <pre className="rules-preview">{result.cursorRules.slice(0, 1200)}…</pre>
             </section>
           )}

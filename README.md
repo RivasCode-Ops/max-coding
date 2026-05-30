@@ -13,9 +13,10 @@ npm start                                    # http://localhost:3847 (React UI)
 npm run quick -- c:\_PROJETOS\Meu-Repo
 npm run quick -- https://github.com/org/repo
 npm run deep -- c:\_PROJETOS\Quadro-Negro
+npm run validate-repo -- c:\_PROJETOS\Meu-Repo   # test/build/lint controlado
 ```
 
-## V1 PRD — status
+## V1 PRD — status (v0.5)
 
 | Requisito | Status |
 |-----------|--------|
@@ -24,12 +25,23 @@ npm run deep -- c:\_PROJETOS\Quadro-Negro
 | Achados tipados + evidência | ✅ confirmed / hypothesis / suggestion |
 | 7 papéis (determinísticos) | ✅ pipeline por módulo |
 | Padrões externos | ✅ catálogos vite / next / streamlit / node |
-| SQLite normalizado | ✅ 9 entidades |
+| SQLite normalizado | ✅ 9 entidades + feedback |
 | UI React + TypeScript | ✅ `apps/web` |
 | Backlog + checklist + PR plan | ✅ |
 | GitHub Search API | ✅ Deep (opcional `GITHUB_TOKEN`) |
 | Diff histórico | ✅ entre scans do mesmo repo |
-| Gerador `.cursor/rules` | ✅ copiar na UI |
+| Gerador `.cursor/rules` | ✅ copiar ou aplicar na UI |
+| **Fase 3 local** | ✅ structure analyzer, validate-repo, health trend, feedback, apply rules |
+
+### Fase 3 (local-first)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Análise estrutural (hotspots) | Deep scan automático |
+| Validar repo (test/build/lint) | `npm run validate-repo -- <path>` · `POST /api/validate-repo` |
+| Tendência de health | `GET /api/repositories/:slug/trend` |
+| Feedback em recomendações | `POST /api/feedback` · botões na UI |
+| Aplicar cursor rules | `POST /api/apply-rules` · botão na UI |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

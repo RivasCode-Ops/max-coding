@@ -39,14 +39,23 @@
 8. API estendida (`/api/analyze`, findings, patterns, backlog)
 9. Relatório executivo + técnico + checklist + PR plan (template)
 
-### Bloco C — Fora desta entrega (Fase 3 PRD)
-- GitHub App, comentários em PR, execução sandbox, multi-tenant
+### Bloco C — Fase 3 local (v0.5) ✅
+
+- `structure-analyzer.mjs` — arquivos grandes, imports, hotspots (Deep)
+- `repo-validator.mjs` — `npm test/build/lint` controlado
+- `health-trend.mjs` — tendência por repo no SQLite
+- `apply-rules.mjs` — escreve `.cursor/rules/` no alvo
+- Feedback útil/não útil em recomendações (SQLite + UI)
+
+### Bloco D — Fora do escopo (Fase 3 PRD cloud)
+- GitHub App, comentários em PR, execução sandbox irrestrita, multi-tenant
 
 ## Métricas de sucesso V1 (PRD)
 
-- [ ] Repo local **ou** GitHub público
-- [ ] 12 categorias com score
-- [ ] Achados com evidência e tipo
-- [ ] Recomendações + backlog + checklist + PR plan
-- [ ] Histórico SQLite normalizado
-- [ ] UI React com histórico e deep/quick
+- [x] Repo local **ou** GitHub público
+- [x] 12 categorias com score
+- [x] Achados com evidência e tipo
+- [x] Recomendações + backlog + checklist + PR plan
+- [x] Histórico SQLite normalizado
+- [x] UI React com histórico e deep/quick
+- [x] Fase 3 local (structure, validate, trend, feedback, apply rules)

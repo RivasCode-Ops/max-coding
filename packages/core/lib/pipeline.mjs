@@ -12,6 +12,7 @@ import {
   toExecutiveSummary,
   toPrPlan,
   verifyFindings,
+  dedupeFindings,
 } from './findings.mjs'
 
 export function runPipeline(profile, mode = 'quick') {
@@ -127,15 +128,6 @@ function dedupeRecommendations(recs) {
     const k = r.title
     if (seen.has(k)) return false
     seen.add(k)
-    return true
-  })
-}
-
-function dedupeFindings(arr) {
-  const seen = new Set()
-  return arr.filter((f) => {
-    if (seen.has(f.title)) return false
-    seen.add(f.title)
     return true
   })
 }

@@ -168,3 +168,47 @@ button.link {
 a {
   color: #93c5fd;
 }
+
+.trend-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.trend-table th,
+.trend-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #334155;
+  text-align: left;
+}
+
+.validation li.ok,
+li.ok {
+  color: #4ade80;
+}
+
+.validation li.fail,
+li.fail {
+  color: #f87171;
+}
+
+.ok-text {
+  color: #4ade80;
+}
+
+.fail-text {
+  color: #f87171;
+}
+
+.feedback-row {
+  margin-top: 6px;
+}
+
+button.tiny {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+button.tiny.active {
+  outline: 2px solid #38bdf8;
+}

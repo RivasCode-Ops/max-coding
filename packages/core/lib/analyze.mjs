@@ -12,6 +12,11 @@ import { closeDb, getDb, getLatestAnalysisForRepo, saveAnalysisFull, upsertRepos
 import { mergeGithubSearchIntoPatterns, searchComparableRepos } from './github-search.mjs'
 import { diffAnalyses } from './scan-diff.mjs'
 import { cursorRulesFilename, generateCursorRules } from './rules-generator.mjs'
+import { analyzeStructure } from './structure-analyzer.mjs'
+import { validateFromProfile } from './repo-validator.mjs'
+import { getHealthTrend } from './health-trend.mjs'
+import { applyCursorRules } from './apply-rules.mjs'
+import { dedupeFindings, findingsToRecommendations } from './findings.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
 
@@ -28,6 +33,8 @@ export async function analyzeRepository(input, options = {}) {
     reportsBase = join(ROOT, 'reports'),
     forceRefresh = false,
     githubSearch = mode === 'deep',
+    validateRepo = false,
+    applyRules = false,
   } = options
 
   const intake = resolveRepositoryInput(input, { forceRefresh })
@@ -42,6 +49,41 @@ export async function analyzeRepository(input, options = {}) {
   const previousSnapshot = db && repoId ? getLatestAnalysisForRepo(db, repoId) : null
 
   const pipeline = runPipeline(profile, mode)
+
+  let structure = null
+  if (mode === 'deep') {
+    structure = analyzeStructure(intake.path)
+    pipeline.findings = dedupeFindings([...pipeline.findings, ...structure.findings])
+    const extraRecs = findingsToRecommendations(structure.findings)
+    const seen = new Set(pipeline.recommendations.map((r) => r.title))
+    let structIdx = 0
+    for (const r of extraRecs) {
+      if (seen.has(r.title)) continue
+      structIdx += 1
+      r.id = `rec-struct-${String(structIdx).padStart(3, '0')}`
+      pipeline.recommendations.push(r)
+      seen.add(r.title)
+    }
+    pipeline.runs.push({
+      agent: 'Structure Analyzer',
+      phase: 'AUDIT',
+      startedAt: generatedAt,
+      finishedAt: generatedAt,
+      fileCount: structure.fileCount,
+    })
+  }
+
+  let repoValidation = null
+  if (validateRepo && mode === 'deep') {
+    repoValidation = validateFromProfile(profile)
+    pipeline.runs.push({
+      agent: 'Repo Validator',
+      phase: 'VERIFY',
+      startedAt: generatedAt,
+      finishedAt: generatedAt,
+      ok: repoValidation.ok,
+    })
+  }
 
   let githubComparable = null
   let externalPatterns = pipeline.externalPatterns
@@ -69,6 +111,10 @@ export async function analyzeRepository(input, options = {}) {
     executiveSummary: null,
     scanDiff: null,
     cursorRules: null,
+    structure,
+    repoValidation,
+    healthTrend: null,
+    rulesApplied: null,
     runs: pipeline.runs,
     verification: pipeline.verification,
     signals: (profile.signals || []).map((s) => s.id),
@@ -91,6 +137,11 @@ export async function analyzeRepository(input, options = {}) {
     if (previousSnapshot && result.scanDiff) {
       result.scanDiff.previousAnalysisId = previousSnapshot.analysisId
     }
+    result.healthTrend = getHealthTrend(db, intake.slug)
+  }
+
+  if (applyRules && result.cursorRules) {
+    result.rulesApplied = applyCursorRules(intake.path, result.cursorRules, intake.slug)
   }
 
   return result
@@ -145,4 +196,4 @@ function writeReportArtifacts(result, reportsBase, slug, stamp) {
   )
 }
 
-export { closeDb, getDb, generateCursorRules, cursorRulesFilename, diffAnalyses }
+export { closeDb, getDb, generateCursorRules, cursorRulesFilename, diffAnalyses, getHealthTrend, applyCursorRules, validateFromProfile }

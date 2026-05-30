@@ -1,6 +1,6 @@
 {
   "name": "max-coding",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Max Stack — auditoria evolutiva local-first de repositórios",
   "type": "module",
@@ -19,6 +19,7 @@
     "dev:web": "npm run dev --workspace=@max-stack/web",
     "dev:api": "node packages/api/bin/serve.mjs",
     "validar": "node validar.mjs",
-    "test": "node --test tests/**/*.test.mjs"
+    "validate-repo": "node packages/core/bin/validate-repo.mjs",
+    "test": "node --test --test-concurrency=1 tests/**/*.test.mjs"
   }
 }

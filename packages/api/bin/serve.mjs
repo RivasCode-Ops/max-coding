@@ -6,7 +6,12 @@ import { createServer } from 'node:http'
 import { readFileSync, existsSync } from 'node:fs'
 import { join, extname } from 'node:path'
 import { analyzeRepository, resolveProjectRoot } from '../../core/lib/analyze.mjs'
-import { closeDb, getDb, getAnalysis, listAnalyses, listRepositories } from '../../core/lib/db.mjs'
+import { closeDb, getDb, getAnalysis, listAnalyses, listRepositories, saveFeedback, getRepositoryBySlug } from '../../core/lib/db.mjs'
+import { getHealthTrend } from '../../core/lib/health-trend.mjs'
+import { applyCursorRules } from '../../core/lib/apply-rules.mjs'
+import { validateFromProfile } from '../../core/lib/repo-validator.mjs'
+import { scanRepo } from '../../repo-scanner/lib/scan-repo.mjs'
+import { basename, resolve } from 'node:path'
 
 const ROOT = resolveProjectRoot()
 const WEB_DIST = join(ROOT, 'apps', 'web', 'dist')
@@ -43,7 +48,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.4.0',
+      version: '0.5.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
     })
@@ -72,11 +77,67 @@ async function handle(req, res) {
     return sendJson(res, 200, row)
   }
 
+  const repoTrendMatch = path.match(/^\/api\/repositories\/([^/]+)\/trend$/)
+  if (repoTrendMatch && req.method === 'GET') {
+    const slug = decodeURIComponent(repoTrendMatch[1])
+    const repo = getRepositoryBySlug(getDb(), slug)
+    if (!repo) return sendJson(res, 404, { error: 'Repositório não encontrado' })
+    return sendJson(res, 200, getHealthTrend(getDb(), slug))
+  }
+
+  if (path === '/api/feedback' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { recommendationId, analysisId, useful } = body
+    if (!recommendationId || typeof useful !== 'boolean') {
+      return sendJson(res, 400, { error: 'recommendationId e useful (boolean) obrigatórios' })
+    }
+    const saved = saveFeedback(getDb(), { recommendationId, analysisId, useful })
+    return sendJson(res, 200, saved)
+  }
+
+  if (path === '/api/validate-repo' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath } = body
+    if (!repoPath) return sendJson(res, 400, { error: 'Campo path obrigatório' })
+    const abs = resolve(repoPath)
+    const slug = basename(abs)
+    const profile = scanRepo(abs, slug)
+    const result = validateFromProfile(profile)
+    return sendJson(res, 200, result)
+  }
+
+  if (path === '/api/apply-rules' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { analysisId, path: repoPath } = body
+    let rules = body.content
+    let targetPath = repoPath
+    let slug = body.slug
+
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+      rules = row.data?.cursorRules
+      targetPath = row.path || row.data?.repo?.path
+      slug = row.slug || row.data?.repo?.slug
+    }
+
+    if (!targetPath || !rules) {
+      return sendJson(res, 400, { error: 'Informe analysisId ou path+content' })
+    }
+
+    const applied = applyCursorRules(targetPath, rules, slug)
+    return sendJson(res, 200, applied)
+  }
+
   if (path === '/api/analyze' && req.method === 'POST') {
     const body = await readBody(req)
-    const { path: repoPath, mode = 'quick' } = JSON.parse(body || '{}')
+    const { path: repoPath, mode = 'quick', validateRepo = false, applyRules = false } = JSON.parse(body || '{}')
     if (!repoPath) return sendJson(res, 400, { error: 'Campo path obrigatório' })
-    const result = await analyzeRepository(repoPath, { mode: mode === 'deep' ? 'deep' : 'quick' })
+    const result = await analyzeRepository(repoPath, {
+      mode: mode === 'deep' ? 'deep' : 'quick',
+      validateRepo: Boolean(validateRepo),
+      applyRules: Boolean(applyRules),
+    })
     return sendJson(res, 200, {
       id: result.analysisId,
       slug: result.repo.slug,
