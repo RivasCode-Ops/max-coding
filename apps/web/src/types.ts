@@ -116,6 +116,15 @@ export type PortfolioGoalsProgress = {
   underTarget: number
 }
 
+export type NotificationConfig = {
+  enabled: boolean
+  webhookUrl: string
+  filePath: string
+  onRegression: boolean
+  onCritical: boolean
+  onFailure: boolean
+}
+
 export type PortfolioChartBar = {
   slug: string
   health: number
@@ -388,6 +397,7 @@ export type PortfolioWatchResult = {
     preview?: boolean
   }[]
   alertsTotal?: number
+  notifications?: { dispatched: number; skipped?: boolean; events?: unknown[] }
 }
 
 export type Status = {

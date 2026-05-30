@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -235,4 +235,22 @@ export function getPortfolioWatchLog(limit = 20) {
 
 export function getPortfolioDigest(root = 'c:\\_PROJETOS') {
   return api<{ root: string; markdown: string }>(`/api/portfolio/digest?root=${encodeURIComponent(root)}&format=md`)
+}
+
+export function getNotificationConfig() {
+  return api<{ config: NotificationConfig }>('/api/notifications/config')
+}
+
+export function saveNotificationConfig(config: NotificationConfig) {
+  return api<{ config: NotificationConfig }>('/api/notifications/config', {
+    method: 'POST',
+    body: JSON.stringify(config),
+  })
+}
+
+export function testNotification() {
+  return api<{ ok: boolean; channels: string[]; payload?: { type: string; message?: string } }>(
+    '/api/notifications/test',
+    { method: 'POST', body: '{}' },
+  )
 }

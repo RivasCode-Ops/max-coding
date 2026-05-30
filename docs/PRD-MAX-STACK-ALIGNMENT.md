@@ -172,6 +172,13 @@
 - `npm run portfolio-goals` · `GET/POST /api/portfolio/goals`
 - Alertas `below-goal` / `under-target` · UI configurar metas
 
+### Bloco Y — Fase 23 Notify (v0.25) ✅
+
+- `notifications.mjs` — arquivo JSONL e/ou webhook HTTP
+- Disparo automático no `watch-portfolio` (regressão, crítico, falha)
+- `npm run notify-config` · `GET/POST /api/notifications/config` · `POST /api/notifications/test`
+- UI **Notificações** no portfolio · env `MAX_NOTIFY_*`
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -200,3 +207,4 @@
 - [x] Fase 20 Heatmap (12 categorias × repos no portfolio)
 - [x] Fase 21 Quality (sinais de qualidade explícitos)
 - [x] Fase 22 Goals (metas de health no portfolio)
+- [x] Fase 23 Notify (notificações watch → arquivo/webhook)

@@ -30,11 +30,13 @@ npm run portfolio-heatmap -- c:\_PROJETOS 8    # heatmap 12 categorias × repos
 npm run quality-signals -- c:\_PROJETOS\Meu-Repo # checklist testes, CI, docs, DX
 npm run portfolio-goals                    # ver metas de health
 npm run portfolio-goals -- set 75 90     # meta mín 75 · alvo 90
+npm run notify-config                    # ver config de notificações
+npm run notify-config -- test            # teste arquivo/webhook
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.24)
+## V1 PRD — status (v0.25)
 
 Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 
@@ -235,6 +237,14 @@ Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 | Metas mín/alvo | `npm run portfolio-goals` · `npm run portfolio-goals -- set 75 90` |
 | Persistência | `GET/POST /api/portfolio/goals` |
 | Alertas + progresso | integrado em alertas/digest · UI **Metas de health** |
+
+### Fase 23 (notifications)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Arquivo JSONL + webhook | `npm run notify-config` · `MAX_NOTIFY_FILE` · `MAX_NOTIFY_WEBHOOK_URL` |
+| Watch portfolio | dispara em regressão (Δ≤−5), crítico ou falha de scan |
+| API + UI | `GET/POST /api/notifications/config` · **Notificações** no portfolio |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

@@ -31,6 +31,9 @@ async function tick() {
       console.log(`  · ${r.slug} ERRO: ${r.error}`)
     }
   }
+  if (run.notifications?.dispatched) {
+    console.log(`  → ${run.notifications.dispatched} notificação(ões) enviada(s)`)
+  }
 }
 
 await tick()

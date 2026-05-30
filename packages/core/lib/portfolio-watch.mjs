@@ -101,7 +101,7 @@ export async function runPortfolioWatchTick(items, db, options = {}) {
     }
   }
 
-  return {
+  const run = {
     dryRun,
     at,
     summary: summarizeWatchRun(results, dryRun),
@@ -109,6 +109,14 @@ export async function runPortfolioWatchTick(items, db, options = {}) {
     results,
     alertsTotal: alerts.length,
   }
+
+  let notifications = { dispatched: 0, skipped: true, events: [] }
+  if (db && !dryRun) {
+    const { dispatchWatchNotifications } = await import('./notifications.mjs')
+    notifications = await dispatchWatchNotifications(db, run, options.notifyOptions)
+  }
+
+  return { ...run, notifications }
 }
 
 export function getWatchLog(db, limit = 20) {

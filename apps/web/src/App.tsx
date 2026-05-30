@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, savePortfolioGoals, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
 import PortfolioHistoryPanel from './PortfolioHistoryPanel'
@@ -83,6 +83,15 @@ export default function App() {
   const [portfolioWatchInterval, setPortfolioWatchInterval] = useState(600)
   const [portfolioWatchLog, setPortfolioWatchLog] = useState<WatchLogEntry[]>([])
   const [portfolioWatchSummary, setPortfolioWatchSummary] = useState<string | null>(null)
+  const [notifyConfig, setNotifyConfig] = useState<NotificationConfig>({
+    enabled: false,
+    webhookUrl: '',
+    filePath: '',
+    onRegression: true,
+    onCritical: true,
+    onFailure: true,
+  })
+  const [notifyMsg, setNotifyMsg] = useState<string | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -118,13 +127,22 @@ export default function App() {
         setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
-      if (s.version && s.version !== '0.24.0') {
+      if (s.version && s.version !== '0.25.0') {
         setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
       }
       const h = await listHistory()
       setHistory(h.items)
     } catch {
       setStatus('Offline — rode npm start na raiz do max-coding')
+    }
+  }
+
+  async function loadNotifyConfig() {
+    try {
+      const r = await getNotificationConfig()
+      setNotifyConfig(r.config)
+    } catch {
+      /* ignore */
     }
   }
 
@@ -252,6 +270,7 @@ export default function App() {
 
   async function refresh() {
     await refreshHistory()
+    await loadNotifyConfig()
     await refreshPortfolio()
   }
 
@@ -879,6 +898,73 @@ export default function App() {
             abaixo do mínimo
           </p>
         )}
+        <h3 className="subhead">Notificações</h3>
+        <div className="goals-row">
+          <label className="inline-check">
+            <input
+              type="checkbox"
+              checked={notifyConfig.enabled}
+              onChange={(e) => setNotifyConfig((c) => ({ ...c, enabled: e.target.checked }))}
+            />
+            Ativas
+          </label>
+          <label>
+            Arquivo
+            <input
+              value={notifyConfig.filePath}
+              onChange={(e) => setNotifyConfig((c) => ({ ...c, filePath: e.target.value }))}
+              placeholder="data/notifications.log"
+            />
+          </label>
+          <label>
+            Webhook
+            <input
+              value={notifyConfig.webhookUrl}
+              onChange={(e) => setNotifyConfig((c) => ({ ...c, webhookUrl: e.target.value }))}
+              placeholder="https://…"
+            />
+          </label>
+          <button
+            type="button"
+            className="tiny secondary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              setNotifyMsg(null)
+              try {
+                const r = await saveNotificationConfig(notifyConfig)
+                setNotifyConfig(r.config)
+                setNotifyMsg('Configuração salva')
+              } catch (e) {
+                alert(e instanceof Error ? e.message : 'Erro')
+              } finally {
+                setBusy(false)
+              }
+            }}
+          >
+            Salvar
+          </button>
+          <button
+            type="button"
+            className="tiny secondary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              setNotifyMsg(null)
+              try {
+                const r = await testNotification()
+                setNotifyMsg(`Teste OK · ${r.channels.join(', ')}`)
+              } catch (e) {
+                alert(e instanceof Error ? e.message : 'Erro')
+              } finally {
+                setBusy(false)
+              }
+            }}
+          >
+            Testar
+          </button>
+        </div>
+        {notifyMsg && <p className="hint">{notifyMsg}</p>}
         <label>Pasta raiz</label>
         <input value={portfolioRoot} onChange={(e) => setPortfolioRoot(e.target.value)} />
         <button type="button" className="secondary" disabled={busy} onClick={() => refresh()}>
@@ -915,7 +1001,11 @@ export default function App() {
                 setBusy(true)
                 try {
                   const run = await runPortfolioWatch(portfolioRoot, true, 5)
-                  setPortfolioWatchSummary(run.summary)
+                  setPortfolioWatchSummary(
+                    run.notifications?.dispatched
+                      ? `${run.summary} · ${run.notifications.dispatched} notificação(ões)`
+                      : run.summary,
+                  )
                 } catch (e) {
                   alert(e instanceof Error ? e.message : 'Erro')
                 } finally {

@@ -291,6 +291,21 @@ await step('Portfolio goals (Fase 22)', async () => {
   ok(`metas ${goals.minHealth}/${goals.targetHealth} · ${p.atTarget}/${p.total} no alvo`)
 })
 
+await step('Notifications (Fase 23)', async () => {
+  const { saveNotificationConfig, dispatchWatchNotifications } = await import('./packages/core/lib/notifications.mjs')
+  const file = join(ROOT, 'data', 'notify-validar.log')
+  saveNotificationConfig(getDb(), { enabled: true, filePath: file, webhookUrl: '', onRegression: true })
+  const run = {
+    dryRun: false,
+    at: new Date().toISOString(),
+    summary: 'validar notify',
+    results: [{ ok: true, slug: 'max-coding', path: ROOT, healthDelta: -6, level: 'warning', health: 82 }],
+  }
+  const out = await dispatchWatchNotifications(getDb(), run)
+  if (!out.dispatched) throw new Error('notify não despachou')
+  ok(`${out.dispatched} evento(s) · ${file.split(/[/\\]/).pop()}`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

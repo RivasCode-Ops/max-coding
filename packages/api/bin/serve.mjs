@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.24.0',
+      version: '0.25.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -242,6 +242,24 @@ async function handle(req, res) {
     const { savePortfolioGoals } = await import('../../core/lib/portfolio-goals.mjs')
     const goals = savePortfolioGoals(getDb(), body)
     return sendJson(res, 200, { goals })
+  }
+
+  if (path === '/api/notifications/config' && req.method === 'GET') {
+    const { getNotificationConfig } = await import('../../core/lib/notifications.mjs')
+    return sendJson(res, 200, { config: getNotificationConfig(getDb()) })
+  }
+
+  if (path === '/api/notifications/config' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { saveNotificationConfig } = await import('../../core/lib/notifications.mjs')
+    const config = saveNotificationConfig(getDb(), body)
+    return sendJson(res, 200, { config })
+  }
+
+  if (path === '/api/notifications/test' && req.method === 'POST') {
+    const { sendTestNotification } = await import('../../core/lib/notifications.mjs')
+    const result = await sendTestNotification(getDb())
+    return sendJson(res, 200, result)
   }
 
   if (path === '/api/portfolio/history' && req.method === 'GET') {
