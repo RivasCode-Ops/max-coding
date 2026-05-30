@@ -1,6 +1,6 @@
 # Modelo de dados MAX (SQLite V1.5)
 
-Persistência local em `data/max.db` (não implementado na V1 CLI — artefatos em `reports/`).
+Persistência local em `data/max.db` — **implementado V1.5**.
 
 ## Tabelas
 

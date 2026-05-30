@@ -1,18 +1,16 @@
-# MAX Web UI (V2)
+# MAX Web UI (local)
 
-Interface React + TypeScript para MAX.
+Interface servida pelo MAX local — **sem build**, **sem Vite**.
 
-## Escopo planejado
+## Usar
 
-1. Campo URL do repositório ou caminho local
-2. Botões Quick Scan e Deep Analysis
-3. Health score e categorias
-4. Achados priorizados e recomendações
-5. Histórico de análises (SQLite)
-6. Backlog técnico exportável
+```bash
+npm start
+# abre http://localhost:3847
+```
 
-## Status
+- Cole o caminho do repo (ex: `c:\_PROJETOS\Quadro-Negro`)
+- Quick Scan ou Deep Analysis
+- Histórico vem do SQLite (`data/max.db`)
 
-Placeholder — V1 usa CLI (`npm run quick` / `npm run deep`).
-
-Stack alvo: Vite + React + TypeScript, consumindo API local Node (futuro `packages/api`).
+Funciona com o servidor rodando — **não precisa do Cursor aberto**.

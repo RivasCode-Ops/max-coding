@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MAX — Auditor Local</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <h1>MAX</h1>
+        <p>Auditor local de repositórios — funciona sem Cursor aberto</p>
+        <p id="status" class="status">Conectando…</p>
+      </header>
+
+      <section class="panel">
+        <label for="repoPath">Caminho do repositório</label>
+        <input id="repoPath" type="text" placeholder="c:\_PROJETOS\Quadro-Negro" />
+        <div class="actions">
+          <button id="btnQuick" type="button">Quick Scan</button>
+          <button id="btnDeep" type="button" class="secondary">Deep Analysis</button>
+        </div>
+        <p id="busy" class="busy hidden">Analisando…</p>
+      </section>
+
+      <section id="result" class="panel hidden">
+        <h2>Resultado</h2>
+        <p class="score" id="score">—</p>
+        <ul id="categories"></ul>
+        <div id="recommendations"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Histórico</h2>
+        <ul id="history" class="history"></ul>
+      </section>
+    </main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

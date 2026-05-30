@@ -8,12 +8,14 @@ alwaysApply: true
 Produto: **MAX** · Repo: `max-coding`
 
 ## Núcleo
-Scanner → health score → pattern search → recommender → `reports/<slug>/`.
+Scanner → health score → SQLite (`data/max.db`) → UI local.
 
-## CLI
+## Comandos
 ```bash
-npm run quick -- c:\caminho\do\repo   # Quick Scan
-npm run deep -- c:\caminho\do\repo    # Deep Analysis
+npm start                              # http://localhost:3847
+npm run validar                        # testes + self-scan (sem Cursor)
+npm run quick -- c:\caminho\do\repo
+npm run deep -- c:\caminho\do\repo
 ```
 
 ## Orquestração

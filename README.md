@@ -14,15 +14,19 @@ Transformar repositórios em **diagnósticos acionáveis** e **planos de melhori
 
 | Modo | Comando | Saída |
 |------|---------|-------|
-| **Quick Scan** | `npm run quick -- <path>` | Health score + sinais principais |
-| **Deep Analysis** | `npm run deep -- <path>` | Quick + padrões OSS + recomendações + backlog |
+| **Quick Scan** | `npm run quick -- <path>` | Health score + SQLite |
+| **Deep Analysis** | `npm run deep -- <path>` | Quick + recomendações + backlog |
+| **UI local** | `npm start` | http://localhost:3847 |
+| **Validar tudo** | `npm run validar` | Testes + self-scan + SQLite |
 
 ```bash
+npm start                                    # UI + API local
+npm run validar                              # checagem completa (sem Cursor)
 npm run quick -- c:\_PROJETOS\Quadro-Negro
 npm run deep -- c:\_PROJETOS\Quadro-Negro
 ```
 
-Relatórios em `reports/<slug>/` (gitignored).
+Histórico persistente em `data/max.db`. Relatórios em `reports/<slug>/` (gitignored).
 
 ## Health score
 
@@ -57,13 +61,13 @@ Ver [docs/gstack-mapping.md](./docs/gstack-mapping.md).
 - Separar risco confirmado · hipótese · melhoria sugerida
 - Modo **audit** (default): só relatório — não editar repo alvo sem autorização
 
-## Status V1
+## Status V1.5
 
-- Quick Scan e Deep Analysis via CLI
+- Quick Scan e Deep Analysis via CLI **ou UI local** (`npm start`)
+- SQLite local (`data/max.db`) — histórico sem Cursor
+- `npm run validar` — testa tudo de uma vez
 - Health score por categorias
-- Catálogo OSS vite-kanban + recomendações priorizadas
 - Handoff multi-agente (`handoff.json`)
-- SQLite e UI React: roadmap V1.5/V2
 
 ## Inspirações (não dependências)
 
