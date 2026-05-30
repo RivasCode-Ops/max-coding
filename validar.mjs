@@ -242,6 +242,15 @@ await step('Portfolio watch (Fase 17)', async () => {
   ok(`${run.summary} · ${run.targets} alvo(s)`)
 })
 
+await step('Portfolio history (Fase 18)', async () => {
+  const { buildPortfolioHistory } = await import('./packages/core/lib/portfolio-history.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import('./packages/core/lib/portfolio.mjs')
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const { summary } = buildPortfolioHistory(getDb(), items, { includeSingle: true })
+  ok(`${summary.tracked} repos no histórico · ${summary.withHistory} com evolução`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
+import PortfolioHistoryPanel from './PortfolioHistoryPanel'
 import './App.css'
 
 export default function App() {
@@ -15,7 +16,12 @@ export default function App() {
   const [validation, setValidation] = useState<AnalysisResult['repoValidation'] | null>(null)
   const [feedbackSent, setFeedbackSent] = useState<Record<string, 'up' | 'down'>>({})
   const [portfolioRoot, setPortfolioRoot] = useState('c:\\_PROJETOS')
-  const [portfolio, setPortfolio] = useState<{ summary: PortfolioSummary; items: PortfolioItem[]; chart?: PortfolioChart } | null>(null)
+  const [portfolio, setPortfolio] = useState<{
+    summary: PortfolioSummary
+    items: PortfolioItem[]
+    chart?: PortfolioChart
+    history?: PortfolioHistory
+  } | null>(null)
   const [prOwnerRepo, setPrOwnerRepo] = useState('RivasCode-Ops/Quadro-Negro')
   const [prNumber, setPrNumber] = useState('1')
   const [prPreview, setPrPreview] = useState<string | null>(null)
@@ -89,7 +95,7 @@ export default function App() {
   async function refreshPortfolio() {
     try {
       const p = await getPortfolio(portfolioRoot)
-      setPortfolio({ summary: p.summary, items: p.items, chart: p.chart })
+      setPortfolio({ summary: p.summary, items: p.items, chart: p.chart, history: p.history })
       const a = await getPortfolioAlerts(portfolioRoot)
       setPortfolioAlerts({ alerts: a.alerts, summary: a.summary })
     } catch {
@@ -858,6 +864,19 @@ export default function App() {
                 buckets={portfolio.chart.buckets}
                 averageHealth={portfolio.chart.averageHealth}
               />
+            )}
+            {portfolio.history && (
+              <>
+                <h3 className="subhead">Histórico multi-repo</h3>
+                <PortfolioHistoryPanel
+                  repos={portfolio.history.repos}
+                  summary={portfolio.history.summary}
+                  onSelect={(path, slug) => {
+                    setRepoPath(path)
+                    setActiveSlug(slug)
+                  }}
+                />
+              </>
             )}
             {activeSlug && portfolio.items.length > 1 && (
               <div className="compare-row">

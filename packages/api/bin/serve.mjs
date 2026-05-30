@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.19.0',
+      version: '0.20.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -206,12 +206,24 @@ async function handle(req, res) {
     const fromDb = buildPortfolioFromDb(getDb())
     const items = mergePortfolio(fromDb, scanned)
     const { buildPortfolioChartData } = await import('../../core/lib/portfolio-chart.mjs')
+    const { buildPortfolioHistory } = await import('../../core/lib/portfolio-history.mjs')
     return sendJson(res, 200, {
       root,
       summary: portfolioSummary(items),
       items,
       chart: buildPortfolioChartData(items),
+      history: buildPortfolioHistory(getDb(), items),
     })
+  }
+
+  if (path === '/api/portfolio/history' && req.method === 'GET') {
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { buildPortfolioHistory } = await import('../../core/lib/portfolio-history.mjs')
+    return sendJson(res, 200, { root, ...buildPortfolioHistory(getDb(), items) })
   }
 
   if (path === '/api/portfolio/chart' && req.method === 'GET') {

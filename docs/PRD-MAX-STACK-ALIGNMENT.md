@@ -142,6 +142,12 @@
 - `POST /api/portfolio/watch` · `GET /api/portfolio/watch/log`
 - UI **Monitorar portfolio** + log persistente
 
+### Bloco T — Fase 18 History (v0.20) ✅
+
+- `portfolio-history.mjs` — tendências de health por repo (SQLite)
+- `GET /api/portfolio/history` · campo `history` em `GET /api/portfolio`
+- `npm run portfolio-history` · UI painel com sparklines
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -165,3 +171,4 @@
 - [x] Fase 15 Chart (gráfico health portfolio)
 - [x] Fase 16 Plan (pacote plan + API/CLI/UI, apply sob autorização)
 - [x] Fase 17 Watch portfolio (re-scan alertas + log SQLite + UI)
+- [x] Fase 18 History (histórico multi-repo + sparklines na UI)

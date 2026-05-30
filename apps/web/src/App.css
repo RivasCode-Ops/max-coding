@@ -570,3 +570,42 @@ tr.portfolio-active td {
   color: #e2e8f0;
   font-size: 0.8rem;
 }
+
+.subhead {
+  margin: 16px 0 8px;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.portfolio-history-wrap {
+  margin: 12px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #0b1220;
+  border: 1px solid #334155;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.history-table th,
+.history-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid #1e293b;
+}
+
+.history-table tr.trend-up td:nth-child(3) {
+  color: #4ade80;
+}
+
+.history-table tr.trend-down td:nth-child(3) {
+  color: #f87171;
+}
+
+.history-spark {
+  display: block;
+}

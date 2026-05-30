@@ -123,6 +123,36 @@ export type PortfolioChart = {
   withHealth: number
 }
 
+export type PortfolioHistoryPoint = {
+  health: number
+  grade?: string
+  mode?: string
+  at: string
+}
+
+export type PortfolioHistoryRepo = {
+  slug: string
+  path: string
+  currentHealth: number
+  trend: 'up' | 'down' | 'stable'
+  delta: number
+  scanCount: number
+  points: PortfolioHistoryPoint[]
+}
+
+export type PortfolioHistorySummary = {
+  tracked: number
+  improving: number
+  declining: number
+  stable: number
+  withHistory: number
+}
+
+export type PortfolioHistory = {
+  repos: PortfolioHistoryRepo[]
+  summary: PortfolioHistorySummary
+}
+
 export type EvolveResult = {
   dryRun: boolean
   summary: string

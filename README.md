@@ -24,11 +24,12 @@ npm run evolve -- c:\_PROJETOS\Meu-Repo --dry-run # preview evolução
 npm run evolve-batch -- c:\_PROJETOS --dry-run  # preview evolve críticos do portfolio
 npm run plan -- c:\_PROJETOS\Meu-Repo           # pacote plan (backlog + PR plan + QA)
 npm run watch-portfolio -- c:\_PROJETOS 1800   # re-scan repos com alertas
+npm run portfolio-history -- c:\_PROJETOS      # tendências de health no portfolio
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.19)
+## V1 PRD — status (v0.20)
 
 | Requisito | Status |
 |-----------|--------|
@@ -58,6 +59,7 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 15 Chart** | ✅ gráfico de health do portfolio na UI |
 | **Fase 16 Plan** | ✅ pacote plan (backlog + PR plan + checklist + QA gate) |
 | **Fase 17 Watch** | ✅ monitorar portfolio + log SQLite + CLI/API |
+| **Fase 18 History** | ✅ histórico multi-repo + sparklines na UI |
 
 ### Fase 3 (local-first)
 
@@ -182,6 +184,14 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Re-scan repos com alertas | `npm run watch-portfolio -- [root] [seg]` |
 | Tick manual / preview | `POST /api/portfolio/watch` · `dryRun: true` |
 | Log persistente | `GET /api/portfolio/watch/log` · UI **Monitorar portfolio** |
+
+### Fase 18 (portfolio history)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Tendências por repo | `npm run portfolio-history -- [root]` |
+| Histórico agregado | `GET /api/portfolio/history` · campo `history` no portfolio |
+| Sparklines na UI | Painel **Histórico multi-repo** |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

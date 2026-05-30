@@ -49,7 +49,7 @@ export function applyRules(analysisId: number) {
 }
 
 export function getPortfolio(root = 'c:\\_PROJETOS') {
-  return api<{ root: string; summary: PortfolioSummary; items: PortfolioItem[]; chart?: PortfolioChart }>(
+  return api<{ root: string; summary: PortfolioSummary; items: PortfolioItem[]; chart?: PortfolioChart; history?: PortfolioHistory }>(
     `/api/portfolio?root=${encodeURIComponent(root)}`,
   )
 }
