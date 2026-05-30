@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.17.0',
+      version: '0.19.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -118,6 +118,15 @@ async function handle(req, res) {
       const { generateExecutiveReport } = await import('../../core/lib/report-export.mjs')
       const md = generateExecutiveReport(row.data)
       return sendJson(res, 200, { markdown: md, slug: row.slug })
+    }
+    if (sub === 'plan') {
+      const { buildPlanPackage, formatPlanMarkdown } = await import('../../core/lib/plan-package.mjs')
+      const fmt = url.searchParams.get('format') || 'json'
+      if (fmt === 'md') {
+        const markdown = formatPlanMarkdown(row.data, { includeIssues: true })
+        return sendJson(res, 200, { markdown, slug: row.slug, auditMode: 'plan' })
+      }
+      return sendJson(res, 200, { slug: row.slug, package: buildPlanPackage(row.data) })
     }
     return sendJson(res, 200, row)
   }
@@ -261,6 +270,25 @@ async function handle(req, res) {
     const items = mergePortfolio(fromDb, scanned)
     const { evolvePortfolioFromRoot } = await import('../../core/lib/evolve-batch.mjs')
     const result = await evolvePortfolioFromRoot(items, getDb(), { dryRun, max, level })
+    return sendJson(res, 200, { root, ...result })
+  }
+
+  if (path === '/api/portfolio/watch/log' && req.method === 'GET') {
+    const limit = Number(url.searchParams.get('limit') || 20)
+    const { getWatchLog } = await import('../../core/lib/portfolio-watch.mjs')
+    return sendJson(res, 200, { items: getWatchLog(getDb(), limit) })
+  }
+
+  if (path === '/api/portfolio/watch' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const root = resolve(body.root || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const { dryRun = false, max = 5, slugs } = body
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { runPortfolioWatchTick } = await import('../../core/lib/portfolio-watch.mjs')
+    const result = await runPortfolioWatchTick(items, getDb(), { dryRun, max, slugs })
     return sendJson(res, 200, { root, ...result })
   }
 
@@ -481,6 +509,34 @@ async function handle(req, res) {
       validateRepo: Boolean(validateRepo),
     })
     return sendJson(res, 200, report)
+  }
+
+  if (path === '/api/plan' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, analysisId, includeIssues = true } = body
+    let result = null
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+      result = row.data
+    } else if (repoPath) {
+      result = await analyzeRepository(resolve(repoPath), {
+        mode: 'deep',
+        auditMode: 'plan',
+        writeReports: false,
+        githubSearch: false,
+      })
+    } else {
+      return sendJson(res, 400, { error: 'Informe path ou analysisId' })
+    }
+    const { buildPlanPackage, formatPlanMarkdown } = await import('../../core/lib/plan-package.mjs')
+    const markdown = formatPlanMarkdown(result, { includeIssues })
+    return sendJson(res, 200, {
+      slug: result.repo?.slug,
+      auditMode: 'plan',
+      markdown,
+      package: buildPlanPackage(result),
+    })
   }
 
   if (path === '/api/compare' && req.method === 'POST') {

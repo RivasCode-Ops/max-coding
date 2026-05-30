@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -132,6 +132,19 @@ export function getAnalysisReport(analysisId: number) {
   return api<{ markdown: string; slug: string }>(`/api/analyses/${analysisId}/report`)
 }
 
+export function getAnalysisPlan(analysisId: number) {
+  return api<{ markdown: string; slug: string; auditMode: 'plan' }>(
+    `/api/analyses/${analysisId}/plan?format=md`,
+  )
+}
+
+export function exportPlan(path: string, analysisId?: number) {
+  return api<{ markdown: string; slug: string; auditMode: 'plan'; package: PlanPackage }>('/api/plan', {
+    method: 'POST',
+    body: JSON.stringify({ path, analysisId, includeIssues: true }),
+  })
+}
+
 export function compareRepos(pathA: string, pathB: string) {
   return api<RepoCompareResult>('/api/compare', {
     method: 'POST',
@@ -171,4 +184,15 @@ export function publishIssuesToGithub(analysisId: number, ownerRepo?: string, dr
     method: 'POST',
     body: JSON.stringify({ analysisId, ownerRepo, dryRun, max: 5 }),
   })
+}
+
+export function runPortfolioWatch(root: string, dryRun = false, max = 5) {
+  return api<PortfolioWatchResult>('/api/portfolio/watch', {
+    method: 'POST',
+    body: JSON.stringify({ root, dryRun, max }),
+  })
+}
+
+export function getPortfolioWatchLog(limit = 20) {
+  return api<{ items: WatchLogEntry[] }>(`/api/portfolio/watch/log?limit=${limit}`)
 }

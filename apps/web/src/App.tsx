@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisReport, getPortfolio, getPortfolioAlerts, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getPortfolio, getPortfolioAlerts, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
 import './App.css'
@@ -40,6 +40,10 @@ export default function App() {
   const [watchLog, setWatchLog] = useState<{ at: string; health: string; delta?: number }[]>([])
   const [batchEvolveResult, setBatchEvolveResult] = useState<EvolveBatchResult | null>(null)
   const [issuesPublishResult, setIssuesPublishResult] = useState<IssuesPublishResult | null>(null)
+  const [portfolioWatchOn, setPortfolioWatchOn] = useState(false)
+  const [portfolioWatchInterval, setPortfolioWatchInterval] = useState(600)
+  const [portfolioWatchLog, setPortfolioWatchLog] = useState<WatchLogEntry[]>([])
+  const [portfolioWatchSummary, setPortfolioWatchSummary] = useState<string | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -150,6 +154,41 @@ export default function App() {
       clearInterval(id)
     }
   }, [watchOn, watchInterval, repoPath])
+
+  useEffect(() => {
+    if (!portfolioWatchOn || !portfolioRoot.trim()) return
+    let cancelled = false
+
+    async function loadLog() {
+      try {
+        const log = await getPortfolioWatchLog(12)
+        if (!cancelled) setPortfolioWatchLog(log.items)
+      } catch {
+        /* ignore */
+      }
+    }
+
+    async function tick() {
+      if (busy || cancelled) return
+      try {
+        const run = await runPortfolioWatch(portfolioRoot.trim(), false, 5)
+        if (cancelled) return
+        setPortfolioWatchSummary(run.summary)
+        await refreshPortfolio()
+        await loadLog()
+      } catch {
+        /* ignore watch errors */
+      }
+    }
+
+    loadLog()
+    tick()
+    const id = setInterval(tick, portfolioWatchInterval * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [portfolioWatchOn, portfolioWatchInterval, portfolioRoot])
 
   async function refresh() {
     await refreshHistory()
@@ -447,6 +486,20 @@ export default function App() {
     }
   }
 
+  async function exportPlan() {
+    if (!result?.analysisId) return alert('Faça uma análise Deep primeiro')
+    setBusy(true)
+    try {
+      const r = await getAnalysisPlan(result.analysisId)
+      await navigator.clipboard.writeText(r.markdown)
+      alert(`Plano (modo plan) copiado! (${r.slug}) — revise antes de aplicar`)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function runContextAction(action: string) {
     switch (action) {
       case 'apply-batch':
@@ -705,6 +758,54 @@ export default function App() {
         <button type="button" className="secondary" disabled={busy} onClick={runPortfolioRescan}>
           Re-scan portfolio
         </button>
+        <label className="inline-check">
+          <input
+            type="checkbox"
+            checked={portfolioWatchOn}
+            onChange={(e) => setPortfolioWatchOn(e.target.checked)}
+          />
+          Monitorar portfolio (alertas)
+        </label>
+        {portfolioWatchOn && (
+          <div className="watch-row">
+            <span>Intervalo</span>
+            <select value={portfolioWatchInterval} onChange={(e) => setPortfolioWatchInterval(Number(e.target.value))}>
+              <option value={300}>5 min</option>
+              <option value={600}>10 min</option>
+              <option value={1800}>30 min</option>
+              <option value={3600}>1 h</option>
+            </select>
+            <button
+              type="button"
+              className="tiny secondary"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                try {
+                  const run = await runPortfolioWatch(portfolioRoot, true, 5)
+                  setPortfolioWatchSummary(run.summary)
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : 'Erro')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              Preview watch
+            </button>
+          </div>
+        )}
+        {portfolioWatchSummary && <p className="hint">{portfolioWatchSummary}</p>}
+        {portfolioWatchLog.length > 0 && (
+          <ul className="watch-log">
+            {portfolioWatchLog.map((w, i) => (
+              <li key={`${w.slug}-${w.at}-${i}`}>
+                {new Date(w.at).toLocaleTimeString('pt-BR')} · {w.slug} · {w.message || '—'}
+                {w.health_delta != null ? ` · Δ ${w.health_delta >= 0 ? '+' : ''}${w.health_delta}` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
         {portfolioAlerts && portfolioAlerts.summary.total > 0 && (
           <div className="alerts-box">
             <strong>
@@ -844,6 +945,9 @@ export default function App() {
             <div className="row">
               <button type="button" className="tiny secondary" disabled={busy || !result.analysisId} onClick={exportReport}>
                 Exportar relatório
+              </button>
+              <button type="button" className="tiny secondary" disabled={busy || !result.analysisId} onClick={exportPlan} title="Backlog + PR plan + checklist — sem apply automático">
+                Exportar plano
               </button>
             </div>
             <p className="score">{result.health.summary}</p>

@@ -266,6 +266,47 @@ export type HistoryItem = {
   url?: string
 }
 
+export type PlanPackage = {
+  auditMode: 'plan'
+  repo: { slug: string; path?: string; source?: string; ownerRepo?: string | null }
+  health?: string
+  backlog: { id: string; title: string; priority: number; tasks?: string[]; acceptance?: string[] }[]
+  checklist: { id: string; item: string; done: boolean }[]
+  prPlan: { branches: string[]; commits: { order: number; message: string; files?: string[] }[]; note?: string }
+  verification: { ok: boolean; issues?: string[] }
+  authorization: { applyAllowed: boolean; requiresHumanReview: boolean; notice: string }
+  counts: { backlog: number; checklist: number; prCommits: number; recommendations: number }
+}
+
+export type WatchLogEntry = {
+  slug: string
+  path?: string
+  health?: number
+  health_delta?: number | null
+  ok: number
+  message?: string
+  at: string
+}
+
+export type PortfolioWatchResult = {
+  root?: string
+  dryRun: boolean
+  at: string
+  summary: string
+  targets: number
+  results: {
+    ok: boolean
+    slug: string
+    path?: string
+    health?: number
+    healthSummary?: string
+    healthDelta?: number | null
+    error?: string
+    preview?: boolean
+  }[]
+  alertsTotal?: number
+}
+
 export type Status = {
   ok: boolean
   product: string

@@ -223,6 +223,25 @@ await step('Portfolio chart (Fase 15)', async () => {
   ok(`${chart.bars.length} barras · média ${chart.averageHealth}`)
 })
 
+await step('Plan package (Fase 16)', async () => {
+  const { buildPlanPackage, formatPlanMarkdown } = await import('./packages/core/lib/plan-package.mjs')
+  const result = await analyzeRepository(ROOT, { mode: 'deep', auditMode: 'plan', writeReports: false, githubSearch: false })
+  const pkg = buildPlanPackage(result)
+  const md = formatPlanMarkdown(result)
+  if (!pkg.authorization.applyAllowed || !md.includes('Modo plan')) throw new Error('plan package inválido')
+  ok(`plan ${pkg.counts.backlog} backlog · ${pkg.counts.prCommits} commits PR`)
+})
+
+await step('Portfolio watch (Fase 17)', async () => {
+  const { runPortfolioWatchTick } = await import('./packages/core/lib/portfolio-watch.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import('./packages/core/lib/portfolio.mjs')
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const run = await runPortfolioWatchTick(items, getDb(), { dryRun: true, max: 3 })
+  if (run.targets < 0) throw new Error('watch preview falhou')
+  ok(`${run.summary} · ${run.targets} alvo(s)`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

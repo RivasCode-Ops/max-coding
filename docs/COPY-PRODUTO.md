@@ -31,7 +31,7 @@ Para: *“aqui está o estado, os padrões, os riscos, as melhorias prioritária
 | 7 | Comparar vs referências | ✅ |
 | 8 | Recomendações priorizadas | ✅ impacto/esforço/risco |
 | 9 | Backlog + roadmap | ✅ backlog.json |
-| 10 | Patches/PR plan (sob autorização) | 🔜 plan mode |
+| 10 | Patches/PR plan (sob autorização) | ✅ plan mode (Fase 16) |
 
 ## Modos de análise
 

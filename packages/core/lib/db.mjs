@@ -152,6 +152,19 @@ function migrate(db) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_cursor_tasks_slug ON cursor_tasks(repo_slug);
+
+    CREATE TABLE IF NOT EXISTS watch_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL,
+      path TEXT,
+      health INTEGER,
+      health_delta INTEGER,
+      ok INTEGER NOT NULL,
+      message TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_watch_log_created ON watch_log(created_at DESC);
   `)
 
   try {
@@ -344,6 +357,30 @@ export function getFeedbackStats(db, recommendationId) {
 
 export function dbExists() {
   return existsSync(DB_PATH)
+}
+
+export function appendWatchLog(db, entry) {
+  const message = entry.error || entry.healthSummary || entry.code || ''
+  db.prepare(
+    `INSERT INTO watch_log (slug, path, health, health_delta, ok, message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    entry.slug,
+    entry.path ?? null,
+    entry.health ?? null,
+    entry.healthDelta ?? null,
+    entry.ok ? 1 : 0,
+    message,
+    entry.at || new Date().toISOString(),
+  )
+}
+
+export function listWatchLog(db, limit = 20) {
+  return db
+    .prepare(
+      `SELECT slug, path, health, health_delta, ok, message, created_at AS at
+       FROM watch_log ORDER BY id DESC LIMIT ?`,
+    )
+    .all(limit)
 }
 
 // compat

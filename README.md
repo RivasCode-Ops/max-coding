@@ -22,11 +22,13 @@ npm run report -- c:\_PROJETOS\Quadro-Negro      # exportar relatório markdown
 npm run evolve -- c:\_PROJETOS\Meu-Repo          # evoluir (scan+pilot+verify)
 npm run evolve -- c:\_PROJETOS\Meu-Repo --dry-run # preview evolução
 npm run evolve-batch -- c:\_PROJETOS --dry-run  # preview evolve críticos do portfolio
+npm run plan -- c:\_PROJETOS\Meu-Repo           # pacote plan (backlog + PR plan + QA)
+npm run watch-portfolio -- c:\_PROJETOS 1800   # re-scan repos com alertas
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.17)
+## V1 PRD — status (v0.19)
 
 | Requisito | Status |
 |-----------|--------|
@@ -54,6 +56,8 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 13 Alertas** | ✅ alertas portfolio + monitorar repo na UI |
 | **Fase 14 Batch** | ✅ evolve batch críticos + publicar issues no GitHub |
 | **Fase 15 Chart** | ✅ gráfico de health do portfolio na UI |
+| **Fase 16 Plan** | ✅ pacote plan (backlog + PR plan + checklist + QA gate) |
+| **Fase 17 Watch** | ✅ monitorar portfolio + log SQLite + CLI/API |
 
 ### Fase 3 (local-first)
 
@@ -162,6 +166,22 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 |---------|-----------|
 | Gráfico de barras por repo | `GET /api/portfolio` (campo `chart`) |
 | SVG exportável | `GET /api/portfolio/chart?format=svg` |
+
+### Fase 16 (plan mode)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Pacote plan autorizado | `npm run plan -- <path> [analysisId]` |
+| JSON + markdown | `GET /api/analyses/:id/plan` · `?format=md` |
+| Gerar plano fresh | `POST /api/plan` · botão **Exportar plano** na UI |
+
+### Fase 17 (watch portfolio)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Re-scan repos com alertas | `npm run watch-portfolio -- [root] [seg]` |
+| Tick manual / preview | `POST /api/portfolio/watch` · `dryRun: true` |
+| Log persistente | `GET /api/portfolio/watch/log` · UI **Monitorar portfolio** |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

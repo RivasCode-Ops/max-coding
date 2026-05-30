@@ -129,6 +129,19 @@
 - `GET /api/portfolio/chart` · SVG opcional
 - UI `PortfolioHealthChart` no portfolio
 
+### Bloco R — Fase 16 Plan (v0.18) ✅
+
+- `plan-package.mjs` — backlog + PR plan + checklist + gate QA (sem apply automático)
+- `npm run plan` · `GET /api/analyses/:id/plan` · `POST /api/plan`
+- UI **Exportar plano** (modo plan, revisão humana obrigatória)
+
+### Bloco S — Fase 17 Watch portfolio (v0.19) ✅
+
+- `portfolio-watch.mjs` — re-scan de repos com alertas (crítico/regressão/stale)
+- `watch_log` SQLite · `npm run watch-portfolio`
+- `POST /api/portfolio/watch` · `GET /api/portfolio/watch/log`
+- UI **Monitorar portfolio** + log persistente
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -150,3 +163,5 @@
 - [x] Fase 13 Alertas (portfolio alerts + watch UI)
 - [x] Fase 14 Batch (evolve batch + publish issues GitHub)
 - [x] Fase 15 Chart (gráfico health portfolio)
+- [x] Fase 16 Plan (pacote plan + API/CLI/UI, apply sob autorização)
+- [x] Fase 17 Watch portfolio (re-scan alertas + log SQLite + UI)
