@@ -5,12 +5,26 @@
 import { createServer } from 'node:http'
 import { readFileSync, existsSync } from 'node:fs'
 import { join, extname } from 'node:path'
-import { analyzeRepository, resolveProjectRoot } from '../../core/lib/analyze.mjs'
+import { analyzeRepository, resolveProjectRoot, generateIssuesMarkdown } from '../../core/lib/analyze.mjs'
 import { closeDb, getDb, getAnalysis, listAnalyses, listRepositories, saveFeedback, getRepositoryBySlug } from '../../core/lib/db.mjs'
 import { getHealthTrend } from '../../core/lib/health-trend.mjs'
 import { applyCursorRules } from '../../core/lib/apply-rules.mjs'
 import { validateFromProfile } from '../../core/lib/repo-validator.mjs'
 import { scanRepo } from '../../repo-scanner/lib/scan-repo.mjs'
+import {
+  buildPortfolioFromDb,
+  discoverLocalRepos,
+  mergePortfolio,
+  portfolioSummary,
+  quickScanPortfolio,
+} from '../../core/lib/portfolio.mjs'
+import { installPreCommitHook } from '../../core/lib/hook-generator.mjs'
+import { checkoutPullRequest } from '../../core/lib/github-pr-checkout.mjs'
+import { commentOnPullRequest, formatPrComment } from '../../core/lib/pr-comment.mjs'
+import { handleGithubWebhook } from '../../core/lib/github-webhook.mjs'
+import { getGithubConfig } from '../../core/lib/github-auth.mjs'
+import { getFeedbackSummary, getFeedbackStatsForAnalysis } from '../../core/lib/feedback-stats.mjs'
+import { trendChartSvg } from '../../core/lib/trend-chart.mjs'
 import { basename, resolve } from 'node:path'
 
 const ROOT = resolveProjectRoot()
@@ -48,9 +62,15 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.5.0',
+      version: '0.9.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
+      github: {
+        pat: Boolean(getGithubConfig().token),
+        app: Boolean(getGithubConfig().appId && getGithubConfig().privateKey),
+        webhook: Boolean(getGithubConfig().webhookSecret),
+      },
+      feedback: getFeedbackSummary(getDb()),
     })
   }
 
@@ -68,6 +88,10 @@ async function handle(req, res) {
     const sub = analysisMatch[2]
     const row = getAnalysis(getDb(), id)
     if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+    if (sub === 'issues') {
+      const md = row.data?.issuesMarkdown || generateIssuesMarkdown(row.data)
+      return sendJson(res, 200, { content: md })
+    }
     if (sub === 'cursor-rules') {
       return sendJson(res, 200, { content: row.data?.cursorRules || '' })
     }
@@ -83,6 +107,88 @@ async function handle(req, res) {
     const repo = getRepositoryBySlug(getDb(), slug)
     if (!repo) return sendJson(res, 404, { error: 'Repositório não encontrado' })
     return sendJson(res, 200, getHealthTrend(getDb(), slug))
+  }
+
+  if (path === '/api/apply-pilot' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, dryRun = false, force = false } = body
+    if (!repoPath) return sendJson(res, 400, { error: 'Campo path obrigatório' })
+    const { runPilot } = await import('../../core/lib/apply-pilot.mjs')
+    const result = await runPilot(resolve(repoPath), { dryRun, force })
+    return sendJson(res, 200, result)
+  }
+
+  if (path === '/api/feedback/summary' && req.method === 'GET') {
+    return sendJson(res, 200, getFeedbackSummary(getDb()))
+  }
+
+  const analysisFeedbackMatch = path.match(/^\/api\/analyses\/(\d+)\/feedback$/)
+  if (analysisFeedbackMatch && req.method === 'GET') {
+    const id = Number(analysisFeedbackMatch[1])
+    return sendJson(res, 200, { stats: getFeedbackStatsForAnalysis(getDb(), id) })
+  }
+
+  const trendChartMatch = path.match(/^\/api\/repositories\/([^/]+)\/trend\/chart$/)
+  if (trendChartMatch && req.method === 'GET') {
+    const slug = decodeURIComponent(trendChartMatch[1])
+    const trend = getHealthTrend(getDb(), slug)
+    res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8' })
+    res.end(trendChartSvg(trend.points))
+    return
+  }
+
+  if (path === '/api/github/webhook' && req.method === 'POST') {
+    const raw = await readBody(req)
+    const result = await handleGithubWebhook(raw, req.headers)
+    return sendJson(res, result.status || 200, result)
+  }
+
+  if (path === '/api/github/pr-comment' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { ownerRepo, pullNumber, mode = 'quick', dryRun = false } = body
+    if (!ownerRepo || !pullNumber) {
+      return sendJson(res, 400, { error: 'ownerRepo e pullNumber obrigatórios' })
+    }
+    const checkout = await checkoutPullRequest(ownerRepo, Number(pullNumber), { forceRefresh: true })
+    const result = await analyzeRepository(checkout.path, {
+      mode: mode === 'deep' ? 'deep' : 'quick',
+      writeReports: false,
+      githubSearch: mode === 'deep',
+    })
+    if (dryRun) {
+      return sendJson(res, 200, {
+        preview: formatPrComment(result, { ownerRepo, pullNumber }),
+        health: result.health,
+      })
+    }
+    const posted = await commentOnPullRequest(ownerRepo, Number(pullNumber), result)
+    return sendJson(res, 200, {
+      commentUrl: posted.comment?.html_url,
+      health: result.health,
+      body: posted.body,
+    })
+  }
+
+  if (path === '/api/portfolio' && req.method === 'GET') {
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    return sendJson(res, 200, { root, summary: portfolioSummary(items), items })
+  }
+
+  if (path === '/api/install-hook' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    let targetPath = body.path
+    if (body.analysisId) {
+      const row = getAnalysis(getDb(), Number(body.analysisId))
+      if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+      targetPath = row.path || row.data?.repo?.path
+    }
+    if (!targetPath) return sendJson(res, 400, { error: 'Informe path ou analysisId' })
+    const applied = installPreCommitHook(resolve(targetPath), ROOT, { minHealth: body.minHealth ?? 70 })
+    return sendJson(res, 200, applied)
   }
 
   if (path === '/api/feedback' && req.method === 'POST') {

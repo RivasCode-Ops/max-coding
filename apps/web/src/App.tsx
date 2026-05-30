@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyRules, getAnalysis, getStatus, getTrend, listHistory, sendFeedback, validateRepo } from './api'
-import type { AnalysisResult, HistoryItem } from './types'
+import { analyze, applyPilot, applyRules, getAnalysis, getAnalysisFeedback, getPortfolio, getStatus, getTrend, installHook, listHistory, postPrComment, sendFeedback, validateRepo } from './api'
+import type { AnalysisResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary } from './types'
+import HealthTrendChart from './HealthTrendChart'
 import './App.css'
 
 export default function App() {
@@ -12,6 +13,23 @@ export default function App() {
   const [trend, setTrend] = useState<{ points: { health_overall: number; created_at: string }[]; trend: string; delta: number } | null>(null)
   const [validation, setValidation] = useState<AnalysisResult['repoValidation'] | null>(null)
   const [feedbackSent, setFeedbackSent] = useState<Record<string, 'up' | 'down'>>({})
+  const [portfolioRoot, setPortfolioRoot] = useState('c:\\_PROJETOS')
+  const [portfolio, setPortfolio] = useState<{ summary: PortfolioSummary; items: PortfolioItem[] } | null>(null)
+  const [prOwnerRepo, setPrOwnerRepo] = useState('RivasCode-Ops/Quadro-Negro')
+  const [prNumber, setPrNumber] = useState('1')
+  const [prPreview, setPrPreview] = useState<string | null>(null)
+  const [githubAuth, setGithubAuth] = useState<string>('')
+  const [feedbackSummary, setFeedbackSummary] = useState<FeedbackSummary | null>(null)
+  const [recFeedback, setRecFeedback] = useState<Record<string, FeedbackRecStats>>({})
+
+  async function loadRecFeedback(analysisId: number) {
+    try {
+      const fb = await getAnalysisFeedback(analysisId)
+      setRecFeedback(fb.stats)
+    } catch {
+      setRecFeedback({})
+    }
+  }
 
   useEffect(() => {
     refresh()
@@ -21,8 +39,22 @@ export default function App() {
     try {
       const s = await getStatus()
       setStatus(`Max Stack online · ${s.db} análises · v${s.version}`)
+      if (s.github) {
+        const parts = []
+        if (s.github.app) parts.push('App')
+        if (s.github.pat) parts.push('PAT')
+        if (s.github.webhook) parts.push('Webhook')
+        setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
+      }
+      if (s.feedback) setFeedbackSummary(s.feedback)
       const h = await listHistory()
       setHistory(h.items)
+      try {
+        const p = await getPortfolio(portfolioRoot)
+        setPortfolio({ summary: p.summary, items: p.items })
+      } catch {
+        setPortfolio(null)
+      }
     } catch {
       setStatus('Offline — rode npm start na raiz do max-coding')
     }
@@ -36,6 +68,7 @@ export default function App() {
       const res = await analyze(repoPath.trim(), mode, opts)
       const data = { ...res.data, analysisId: res.data.analysisId ?? res.id }
       setResult(data)
+      if (data.analysisId) await loadRecFeedback(data.analysisId)
       if (data.repo?.slug) {
         try {
           setTrend(await getTrend(data.repo.slug))
@@ -76,12 +109,66 @@ export default function App() {
     }
   }
 
+  async function runPrComment(dryRun: boolean) {
+    const n = Number(prNumber)
+    if (!prOwnerRepo.trim() || !n) return alert('Informe owner/repo e número do PR')
+    setBusy(true)
+    try {
+      const res = await postPrComment(prOwnerRepo.trim(), n, 'quick', dryRun)
+      if (dryRun) {
+        setPrPreview(res.preview || '')
+      } else {
+        alert(`Comentário publicado!\n${res.commentUrl || ''}`)
+        setPrPreview(null)
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro — configure GITHUB_TOKEN ou App (ver docs/GITHUB-APP.md)')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runApplyPilot(dryRun: boolean) {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return
+    setBusy(true)
+    try {
+      const r = await applyPilot(path, dryRun)
+      if (dryRun) {
+        alert(`Plano: ${r.applied.planned.join(', ') || 'nada a aplicar'}`)
+      } else {
+        alert(`Health: ${r.before.health.summary} → ${r.after.health.summary} (${r.delta >= 0 ? '+' : ''}${r.delta})`)
+        await run('quick')
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runInstallHook() {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return
+    setBusy(true)
+    try {
+      const r = await installHook(path)
+      alert(`Hook instalado:\n${r.written}`)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function feedback(recId: string, useful: boolean) {
     if (!result) return
     const fullId = result.analysisId ? `${result.analysisId}-${recId}` : recId
     try {
       await sendFeedback(fullId, result.analysisId, useful)
       setFeedbackSent((s) => ({ ...s, [recId]: useful ? 'up' : 'down' }))
+      if (result.analysisId) await loadRecFeedback(result.analysisId)
+      await refresh()
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erro')
     }
@@ -91,6 +178,7 @@ export default function App() {
     const row = await getAnalysis(id)
     const data = { ...row.data, analysisId: id }
     setResult(data)
+    if (id) await loadRecFeedback(id)
     if (row.data?.repo?.path) setRepoPath(row.data.repo.path)
     if (row.slug) {
       try {
@@ -107,6 +195,12 @@ export default function App() {
         <h1>Max Stack</h1>
         <p>Auditoria local-first de repositórios</p>
         <span className="badge">{status}</span>
+        {githubAuth && <span className="badge secondary-badge">GitHub: {githubAuth}</span>}
+        {feedbackSummary && feedbackSummary.total > 0 && (
+          <span className="badge secondary-badge">
+            Feedback: {feedbackSummary.usefulPct}% útil ({feedbackSummary.total})
+          </span>
+        )}
       </header>
 
       <section className="card">
@@ -126,6 +220,12 @@ export default function App() {
           <button disabled={busy} className="secondary" onClick={runValidate}>
             Validar repo
           </button>
+          <button disabled={busy} className="secondary" onClick={() => runApplyPilot(true)}>
+            Preview P1/P2
+          </button>
+          <button disabled={busy} className="secondary" onClick={() => runApplyPilot(false)}>
+            Aplicar P1/P2
+          </button>
         </div>
         {busy && <p className="busy">Analisando…</p>}
         {validation && (
@@ -140,6 +240,63 @@ export default function App() {
               ))}
             </ul>
           </div>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Comentário em PR (GitHub App)</h2>
+        <p className="note">Requer GITHUB_TOKEN ou GitHub App — ver docs/GITHUB-APP.md</p>
+        <label>owner/repo</label>
+        <input value={prOwnerRepo} onChange={(e) => setPrOwnerRepo(e.target.value)} placeholder="RivasCode-Ops/Quadro-Negro" />
+        <label>Número do PR</label>
+        <input value={prNumber} onChange={(e) => setPrNumber(e.target.value)} placeholder="1" />
+        <div className="row">
+          <button type="button" disabled={busy} onClick={() => runPrComment(true)}>
+            Preview
+          </button>
+          <button type="button" className="secondary" disabled={busy} onClick={() => runPrComment(false)}>
+            Publicar comentário
+          </button>
+        </div>
+        {prPreview && <pre className="rules-preview">{prPreview}</pre>}
+      </section>
+
+      <section className="card">
+        <h2>Portfolio</h2>
+        <label>Pasta raiz</label>
+        <input value={portfolioRoot} onChange={(e) => setPortfolioRoot(e.target.value)} />
+        <button type="button" className="secondary" disabled={busy} onClick={() => refresh()}>
+          Atualizar portfolio
+        </button>
+        {portfolio && (
+          <>
+            <p>
+              {portfolio.summary.total} repos · média {portfolio.summary.averageHealth}/100 ·{' '}
+              {portfolio.summary.needsAttention.length} precisam atenção (&lt;70)
+            </p>
+            <table className="trend-table">
+              <thead>
+                <tr>
+                  <th>Repo</th>
+                  <th>Health</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {portfolio.items.slice(0, 12).map((p) => (
+                  <tr key={p.slug}>
+                    <td>{p.slug}</td>
+                    <td>{p.health != null ? `${p.health}/100` : '—'}</td>
+                    <td>
+                      <button type="button" className="link" onClick={() => setRepoPath(p.path)}>
+                        analisar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </section>
 
@@ -181,12 +338,7 @@ export default function App() {
           {trend && trend.points.length > 0 && (
             <section className="card">
               <h2>Tendência de health</h2>
-              <p>
-                {trend.trend === 'up' && '↑ Subindo'}
-                {trend.trend === 'down' && '↓ Caindo'}
-                {trend.trend === 'stable' && '→ Estável'} · delta {trend.delta >= 0 ? '+' : ''}
-                {trend.delta} pts
-              </p>
+              <HealthTrendChart points={trend.points} trend={trend.trend} delta={trend.delta} />
               <table className="trend-table">
                 <thead>
                   <tr>
@@ -240,6 +392,22 @@ export default function App() {
               </ul>
             </section>
           )}
+          {result.gitHistory?.available && result.gitHistory.metrics && (
+            <section className="card">
+              <h2>Git (90 dias)</h2>
+              <p>{result.gitHistory.metrics.commitCount} commits</p>
+              {result.gitHistory.metrics.topFiles?.length > 0 && (
+                <ul>
+                  {result.gitHistory.metrics.topFiles.map((f) => (
+                    <li key={f.file}>
+                      {f.file} — {f.count} commits
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
           {result.scanDiff?.hasPrevious && (
             <section className="card">
               <h2>Diff vs scan anterior (#{result.scanDiff.previousAnalysisId})</h2>
@@ -335,6 +503,11 @@ export default function App() {
                   >
                     Não útil
                   </button>
+                  {recFeedback[r.id] && (recFeedback[r.id].useful > 0 || recFeedback[r.id].notUseful > 0) && (
+                    <span className="note rec-stats">
+                      👍 {recFeedback[r.id].useful} · 👎 {recFeedback[r.id].notUseful}
+                    </span>
+                  )}
                 </div>
               </article>
             ))}
@@ -359,6 +532,23 @@ export default function App() {
               ))}
             </ul>
           </section>
+
+          {result.issuesMarkdown && (
+            <section className="card">
+              <h2>Issues GitHub (sugeridas)</h2>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(result.issuesMarkdown || '')
+                  alert('Issues copiadas!')
+                }}
+              >
+                Copiar issues
+              </button>
+              <pre className="rules-preview">{result.issuesMarkdown.slice(0, 900)}…</pre>
+            </section>
+          )}
 
           {result.prPlan && (
             <section className="card">
@@ -388,6 +578,9 @@ export default function App() {
                 </button>
                 <button type="button" className="secondary" disabled={busy} onClick={runApplyRules}>
                   Aplicar no repo
+                </button>
+                <button type="button" className="secondary" disabled={busy} onClick={runInstallHook}>
+                  Instalar pre-commit hook
                 </button>
               </div>
               <pre className="rules-preview">{result.cursorRules.slice(0, 1200)}…</pre>

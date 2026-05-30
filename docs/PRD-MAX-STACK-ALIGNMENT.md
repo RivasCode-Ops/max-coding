@@ -7,7 +7,7 @@
 | Ponto do PRD | Sua intenção | Minha coordenação |
 |--------------|--------------|-------------------|
 | Nome **Max Stack** | Posicionamento do produto | ✅ Adotar na UI/docs; repo `max-coding` permanece |
-| V1 completa | Tudo do PRD funcional | ✅ Escopo V1 abaixo; Fase 3 (GitHub App, PR comments) fica **fora** como no PRD |
+| V1 completa | Tudo do PRD funcional | ✅ V1 + Fases 3–5 local/cloud entregues |
 | Papéis gstack (7 agentes) | Especialização real | ⚠️ **Diferente:** módulos determinísticos por papel (sem 7 chamadas LLM) — mais rápido, local, rastreável |
 | React + TypeScript UI | Interface V1 | ✅ Vite + React + TS em `apps/web`; API Node existente |
 | SQLite schema completo | 9 entidades | ✅ Normalizar tabelas; manter `payload` JSON como cache de compatibilidade |
@@ -47,8 +47,38 @@
 - `apply-rules.mjs` — escreve `.cursor/rules/` no alvo
 - Feedback útil/não útil em recomendações (SQLite + UI)
 
-### Bloco D — Fora do escopo (Fase 3 PRD cloud)
-- GitHub App, comentários em PR, execução sandbox irrestrita, multi-tenant
+### Bloco D — ~~Fora do escopo~~ → entregue na Fase 5
+
+### Bloco E — Fase 4 local (v0.6) ✅
+
+- `git-analyzer.mjs` — commits, hotspots, inatividade (Deep)
+- `portfolio.mjs` — visão multi-repo (`_PROJETOS`)
+- `issues-export.mjs` — templates de issues GitHub
+- `hook-generator.mjs` — pre-commit opcional (aviso health)
+
+### Bloco F — Fase 5 cloud (v0.7) ✅
+
+- `github-auth.mjs` — App JWT, installation token, PAT, webhook HMAC
+- `github-api.mjs` — REST client
+- `github-pr-checkout.mjs` — checkout HEAD do PR
+- `pr-comment.mjs` — markdown + POST comment
+- `github-webhook.mjs` — `pull_request` → scan + comment
+- Guia: [GITHUB-APP.md](./GITHUB-APP.md)
+
+### Bloco G — Fora do escopo (enterprise)
+- Multi-tenant SaaS, sandbox irrestrito, auto-merge PRs
+
+### Bloco H — Fase 6 polish (v0.8) ✅
+
+- `trend-chart.mjs` + `HealthTrendChart.tsx` — gráfico SVG
+- `feedback-stats.mjs` — resumo global e por análise
+- `watch.mjs` — re-scan periódico CLI
+
+### Bloco I — Fase 7 piloto (v0.9) ✅
+
+- `apply-pilot.mjs` — SECURITY, dependabot, LICENSE, ESLint, editorconfig, .env.example
+- `npm run apply-pilot` + API/UI
+- Quadro-Negro: modularização `board-ui.js` + health **97/100**
 
 ## Métricas de sucesso V1 (PRD)
 
@@ -59,3 +89,7 @@
 - [x] Histórico SQLite normalizado
 - [x] UI React com histórico e deep/quick
 - [x] Fase 3 local (structure, validate, trend, feedback, apply rules)
+- [x] Fase 4 local (git, portfolio, issues export, pre-commit hook)
+- [x] Fase 5 cloud (GitHub App, PR comments, webhook)
+- [x] Fase 6 polish (trend chart, feedback stats, watch)
+- [x] Fase 7 piloto (apply-pilot, Quadro-Negro 97/100)

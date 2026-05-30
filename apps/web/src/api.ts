@@ -1,4 +1,4 @@
-import type { AnalysisResult, HistoryItem, Status } from './types'
+import type { AnalysisResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -45,5 +45,45 @@ export function applyRules(analysisId: number) {
   return api<{ written: string; filename: string }>('/api/apply-rules', {
     method: 'POST',
     body: JSON.stringify({ analysisId }),
+  })
+}
+
+export function getPortfolio(root = 'c:\\_PROJETOS') {
+  return api<{ root: string; summary: PortfolioSummary; items: PortfolioItem[] }>(
+    `/api/portfolio?root=${encodeURIComponent(root)}`,
+  )
+}
+
+export function installHook(path: string) {
+  return api<{ written: string }>('/api/install-hook', {
+    method: 'POST',
+    body: JSON.stringify({ path }),
+  })
+}
+
+export function postPrComment(ownerRepo: string, pullNumber: number, mode: 'quick' | 'deep' = 'quick', dryRun = false) {
+  return api<{ commentUrl?: string; preview?: string; health: { summary: string } }>('/api/github/pr-comment', {
+    method: 'POST',
+    body: JSON.stringify({ ownerRepo, pullNumber, mode, dryRun }),
+  })
+}
+
+export function getFeedbackSummary() {
+  return api<FeedbackSummary>('/api/feedback/summary')
+}
+
+export function getAnalysisFeedback(analysisId: number) {
+  return api<{ stats: Record<string, FeedbackRecStats> }>(`/api/analyses/${analysisId}/feedback`)
+}
+
+export function applyPilot(path: string, dryRun = false) {
+  return api<{
+    before: { health: { summary: string; overall: number } }
+    after: { health: { summary: string; overall: number } }
+    delta: number
+    applied: { planned: string[]; results: { fixId: string; written?: string; skipped?: boolean }[] }
+  }>('/api/apply-pilot', {
+    method: 'POST',
+    body: JSON.stringify({ path, dryRun }),
   })
 }

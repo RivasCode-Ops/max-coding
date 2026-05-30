@@ -1,6 +1,7 @@
 reports/
 data/
 data/repos/
+data/pr-checkouts/
 node_modules/
 .env
 *.log

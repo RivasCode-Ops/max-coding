@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { analyzeRepository, closeDb } from './packages/core/lib/analyze.mjs'
-import { getDbPath } from './packages/core/lib/db.mjs'
+import { getDbPath, getDb } from './packages/core/lib/db.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)))
 let failed = 0
@@ -73,6 +73,62 @@ await step('Structure analyzer (self)', async () => {
   const s = analyzeStructure(ROOT)
   if (s.fileCount < 5) throw new Error('structure fileCount baixo')
   ok(`${s.fileCount} arquivos · ${s.findings.length} achados estruturais`)
+})
+
+await step('Portfolio _PROJETOS', async () => {
+  const { discoverLocalRepos, quickScanPortfolio, portfolioSummary } = await import('./packages/core/lib/portfolio.mjs')
+  const root = join(ROOT, '..')
+  const repos = discoverLocalRepos(root)
+  if (repos.length < 1) throw new Error('nenhum repo no portfolio')
+  const items = quickScanPortfolio(repos)
+  const summary = portfolioSummary(items)
+  ok(`${summary.total} repos · média ${summary.averageHealth}/100`)
+})
+
+await step('Git analyzer + issues export', async () => {
+  const { analyzeGitHistory } = await import('./packages/core/lib/git-analyzer.mjs')
+  const { generateIssuesMarkdown } = await import('./packages/core/lib/issues-export.mjs')
+  const git = analyzeGitHistory(ROOT)
+  if (!git.available) throw new Error('git não disponível em max-coding')
+  const result = await analyzeRepository(ROOT, { mode: 'deep', writeReports: false, githubSearch: false })
+  if (!result.issuesMarkdown && !result.gitHistory) throw new Error('Fase 4 não integrada')
+  ok(`git ${git.metrics?.commitCount} commits · issues ${generateIssuesMarkdown(result).length} chars`)
+})
+
+await step('PR comment format (Fase 5)', async () => {
+  const { formatPrComment } = await import('./packages/core/lib/pr-comment.mjs')
+  const { verifyWebhookSignature } = await import('./packages/core/lib/github-auth.mjs')
+  const { createHmac } = await import('node:crypto')
+  const md = formatPrComment({ mode: 'quick', health: { summary: '80/100' }, findings: [], recommendations: [] })
+  if (!md.includes('Max Stack')) throw new Error('format PR inválido')
+  const payload = '{}'
+  const sig = `sha256=${createHmac('sha256', 'test').update(payload).digest('hex')}`
+  if (!verifyWebhookSignature(payload, sig, 'test')) throw new Error('webhook signature')
+  ok('PR comment + webhook signature')
+})
+
+await step('Trend chart + feedback stats (Fase 6)', async () => {
+  const { buildTrendChartData } = await import('./packages/core/lib/trend-chart.mjs')
+  const { getFeedbackSummary } = await import('./packages/core/lib/feedback-stats.mjs')
+  const chart = buildTrendChartData([{ health_overall: 80, created_at: 'x' }])
+  if (chart.empty) throw new Error('chart vazio')
+  getFeedbackSummary(getDb())
+  ok('trend chart + feedback summary')
+})
+
+await step('Piloto Quadro-Negro (Fase 7)', async () => {
+  const pilot = join(ROOT, '..', 'Quadro-Negro')
+  if (!existsSync(pilot)) {
+    ok('Quadro-Negro não encontrado — pulando')
+    return
+  }
+  const { runPilot } = await import('./packages/core/lib/apply-pilot.mjs')
+  const preview = await runPilot(pilot, { dryRun: true })
+  if (!preview.applied.planned.length) ok('nada a aplicar (já corrigido)')
+  else ok(`plano: ${preview.applied.planned.join(', ')} · health atual ${preview.before.health.summary}`)
+  const after = await analyzeRepository(pilot, { mode: 'quick', writeReports: false, githubSearch: false })
+  if (after.health.overall < 95) throw new Error(`health ${after.health.summary} < 95`)
+  ok(`Quadro-Negro ${after.health.summary}`)
 })
 
 closeDb()

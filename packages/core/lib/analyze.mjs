@@ -17,6 +17,8 @@ import { validateFromProfile } from './repo-validator.mjs'
 import { getHealthTrend } from './health-trend.mjs'
 import { applyCursorRules } from './apply-rules.mjs'
 import { dedupeFindings, findingsToRecommendations } from './findings.mjs'
+import { analyzeGitHistory } from './git-analyzer.mjs'
+import { generateIssuesMarkdown } from './issues-export.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
 
@@ -51,26 +53,19 @@ export async function analyzeRepository(input, options = {}) {
   const pipeline = runPipeline(profile, mode)
 
   let structure = null
+  let gitHistory = null
   if (mode === 'deep') {
     structure = analyzeStructure(intake.path)
-    pipeline.findings = dedupeFindings([...pipeline.findings, ...structure.findings])
-    const extraRecs = findingsToRecommendations(structure.findings)
-    const seen = new Set(pipeline.recommendations.map((r) => r.title))
-    let structIdx = 0
-    for (const r of extraRecs) {
-      if (seen.has(r.title)) continue
-      structIdx += 1
-      r.id = `rec-struct-${String(structIdx).padStart(3, '0')}`
-      pipeline.recommendations.push(r)
-      seen.add(r.title)
-    }
-    pipeline.runs.push({
-      agent: 'Structure Analyzer',
-      phase: 'AUDIT',
-      startedAt: generatedAt,
-      finishedAt: generatedAt,
+    mergeDeepFindings(pipeline, structure.findings, generatedAt, 'Structure Analyzer', {
       fileCount: structure.fileCount,
     })
+
+    gitHistory = analyzeGitHistory(intake.path)
+    if (gitHistory.available) {
+      mergeDeepFindings(pipeline, gitHistory.findings, generatedAt, 'Git Analyzer', {
+        commits: gitHistory.metrics?.commitCount,
+      })
+    }
   }
 
   let repoValidation = null
@@ -112,9 +107,11 @@ export async function analyzeRepository(input, options = {}) {
     scanDiff: null,
     cursorRules: null,
     structure,
+    gitHistory,
     repoValidation,
     healthTrend: null,
     rulesApplied: null,
+    issuesMarkdown: null,
     runs: pipeline.runs,
     verification: pipeline.verification,
     signals: (profile.signals || []).map((s) => s.id),
@@ -128,6 +125,7 @@ export async function analyzeRepository(input, options = {}) {
 
   if (mode === 'deep') {
     result.reportMarkdown = toMarkdown({ ...result, phase: 'PLAN', mode: auditMode }, profile)
+    result.issuesMarkdown = generateIssuesMarkdown(result)
   }
 
   if (writeReports) writeReportArtifacts(result, reportsBase, intake.slug, stamp)
@@ -177,6 +175,9 @@ function writeReportArtifacts(result, reportsBase, slug, stamp) {
   writeFileSync(join(outDir, `backlog-${stamp}.json`), JSON.stringify(result.backlog, null, 2), 'utf8')
   writeFileSync(join(outDir, `checklist-${stamp}.json`), JSON.stringify(result.checklist, null, 2), 'utf8')
   writeFileSync(join(outDir, `pr-plan-${stamp}.json`), JSON.stringify(result.prPlan, null, 2), 'utf8')
+  if (result.issuesMarkdown) {
+    writeFileSync(join(outDir, `issues-${stamp}.md`), result.issuesMarkdown, 'utf8')
+  }
   writeFileSync(
     join(outDir, 'handoff.json'),
     JSON.stringify(
@@ -196,4 +197,25 @@ function writeReportArtifacts(result, reportsBase, slug, stamp) {
   )
 }
 
-export { closeDb, getDb, generateCursorRules, cursorRulesFilename, diffAnalyses, getHealthTrend, applyCursorRules, validateFromProfile }
+function mergeDeepFindings(pipeline, newFindings, generatedAt, agent, meta = {}) {
+  pipeline.findings = dedupeFindings([...pipeline.findings, ...newFindings])
+  const extraRecs = findingsToRecommendations(newFindings)
+  const seen = new Set(pipeline.recommendations.map((r) => r.title))
+  let idx = 0
+  for (const r of extraRecs) {
+    if (seen.has(r.title)) continue
+    idx += 1
+    r.id = `rec-${agent.toLowerCase().replace(/\s+/g, '-')}-${String(idx).padStart(3, '0')}`
+    pipeline.recommendations.push(r)
+    seen.add(r.title)
+  }
+  pipeline.runs.push({
+    agent,
+    phase: 'AUDIT',
+    startedAt: generatedAt,
+    finishedAt: generatedAt,
+    ...meta,
+  })
+}
+
+export { closeDb, getDb, generateCursorRules, cursorRulesFilename, diffAnalyses, getHealthTrend, applyCursorRules, validateFromProfile, generateIssuesMarkdown }

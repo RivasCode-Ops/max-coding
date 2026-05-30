@@ -1,3 +1,22 @@
+export type HealthTrendPoint = {
+  health_overall: number
+  health_grade?: string
+  created_at: string
+  id?: number
+}
+
+export type FeedbackSummary = {
+  total: number
+  useful: number
+  notUseful: number
+  usefulPct: number | null
+}
+
+export type FeedbackRecStats = {
+  useful: number
+  notUseful: number
+}
+
 export type HealthCategory = {
   id: string
   label?: string
@@ -40,7 +59,6 @@ export type AnalysisResult = {
   }
   cursorRules?: string
   executiveSummary?: { topGaps: string[]; stack: string }
-  analysisId?: number
   structure?: {
     fileCount: number
     totalLines: number
@@ -58,6 +76,33 @@ export type AnalysisResult = {
     delta: number
   }
   rulesApplied?: { written: string; filename: string }
+  issuesMarkdown?: string
+  gitHistory?: {
+    available: boolean
+    metrics?: {
+      commitCount: number
+      topFiles: { file: string; count: number }[]
+      daysSinceLastCommit: number | null
+    }
+  }
+}
+
+export type PortfolioItem = {
+  slug: string
+  path: string
+  health?: number
+  grade?: string
+  summary?: string
+  source?: string
+  analysisCount?: number
+}
+
+export type PortfolioSummary = {
+  total: number
+  withHealth: number
+  averageHealth: number
+  top: PortfolioItem[]
+  needsAttention: PortfolioItem[]
 }
 
 export type HistoryItem = {
@@ -80,4 +125,6 @@ export type Status = {
   version: string
   port: number
   db: number
+  github?: { pat: boolean; app: boolean; webhook: boolean }
+  feedback?: FeedbackSummary
 }

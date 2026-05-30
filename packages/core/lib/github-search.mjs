@@ -1,7 +1,9 @@
 /**
  * GitHub Search API — repos comparáveis por stack (Fase 2)
- * Opcional: GITHUB_TOKEN para rate limit maior
+ * Auth: GitHub App ou GITHUB_TOKEN
  */
+import { getGithubAuthToken, githubHeaders } from './github-auth.mjs'
+
 const QUERY_MAP = {
   vite: 'vite topic:vite stars:>100',
   react: 'react topic:react stars:>500',
@@ -22,13 +24,8 @@ export function buildSearchQuery(profile) {
 
 export async function searchComparableRepos(profile) {
   const query = buildSearchQuery(profile)
-  const headers = {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'MaxStack/0.4',
-    'X-GitHub-Api-Version': '2022-11-28',
-  }
-  const token = process.env.GITHUB_TOKEN
-  if (token) headers.Authorization = `Bearer ${token}`
+  const auth = await getGithubAuthToken().catch(() => ({ token: process.env.GITHUB_TOKEN, type: 'pat' }))
+  const headers = githubHeaders(auth.token)
 
   try {
     const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&per_page=5`
@@ -37,7 +34,7 @@ export async function searchComparableRepos(profile) {
       return {
         query,
         items: [],
-        note: token ? `GitHub API ${res.status}` : 'Sem GITHUB_TOKEN — rate limit pode bloquear',
+        note: auth.token ? `GitHub API ${res.status}` : 'Sem auth — configure GITHUB_TOKEN ou GitHub App',
         rateLimited: res.status === 403,
       }
     }
