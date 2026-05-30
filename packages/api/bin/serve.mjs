@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.15.0',
+      version: '0.17.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -196,7 +196,29 @@ async function handle(req, res) {
     const scanned = quickScanPortfolio(local)
     const fromDb = buildPortfolioFromDb(getDb())
     const items = mergePortfolio(fromDb, scanned)
-    return sendJson(res, 200, { root, summary: portfolioSummary(items), items })
+    const { buildPortfolioChartData } = await import('../../core/lib/portfolio-chart.mjs')
+    return sendJson(res, 200, {
+      root,
+      summary: portfolioSummary(items),
+      items,
+      chart: buildPortfolioChartData(items),
+    })
+  }
+
+  if (path === '/api/portfolio/chart' && req.method === 'GET') {
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { buildPortfolioChartData, portfolioChartSvg } = await import('../../core/lib/portfolio-chart.mjs')
+    const chart = buildPortfolioChartData(items)
+    if (url.searchParams.get('format') === 'svg') {
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8' })
+      res.end(portfolioChartSvg(chart))
+      return
+    }
+    return sendJson(res, 200, { root, chart })
   }
 
   if (path === '/api/portfolio/rescan' && req.method === 'POST') {
@@ -226,6 +248,36 @@ async function handle(req, res) {
     if (!repoPath) return sendJson(res, 400, { error: 'path obrigatório' })
     const { evolveRepository } = await import('../../core/lib/evolve-repo.mjs')
     const result = await evolveRepository(resolve(repoPath), { dryRun, applyPilot, validateRepo, mode })
+    return sendJson(res, 200, result)
+  }
+
+  if (path === '/api/portfolio/evolve-batch' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const root = resolve(body.root || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const { dryRun = false, max = 3, level = 'critical' } = body
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { evolvePortfolioFromRoot } = await import('../../core/lib/evolve-batch.mjs')
+    const result = await evolvePortfolioFromRoot(items, getDb(), { dryRun, max, level })
+    return sendJson(res, 200, { root, ...result })
+  }
+
+  if (path === '/api/github/publish-issues' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { analysisId, ownerRepo, dryRun = false, max = 5, repoPath } = body
+    if (!analysisId) return sendJson(res, 400, { error: 'analysisId obrigatório' })
+    const row = getAnalysis(getDb(), Number(analysisId))
+    if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+    const { publishIssuesToGithub } = await import('../../core/lib/issues-publish.mjs')
+    const result = await publishIssuesToGithub(row.data, {
+      ownerRepo,
+      dryRun,
+      max,
+      repoPath: repoPath ? resolve(repoPath) : undefined,
+      analysisId: row.id,
+    })
     return sendJson(res, 200, result)
   }
 

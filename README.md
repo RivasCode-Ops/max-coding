@@ -21,11 +21,12 @@ npm run verify -- c:\_PROJETOS\Quadro-Negro       # verificar pós-implementaç�
 npm run report -- c:\_PROJETOS\Quadro-Negro      # exportar relatório markdown
 npm run evolve -- c:\_PROJETOS\Meu-Repo          # evoluir (scan+pilot+verify)
 npm run evolve -- c:\_PROJETOS\Meu-Repo --dry-run # preview evolução
+npm run evolve-batch -- c:\_PROJETOS --dry-run  # preview evolve críticos do portfolio
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.15)
+## V1 PRD — status (v0.17)
 
 | Requisito | Status |
 |-----------|--------|
@@ -51,6 +52,8 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 11 Export** | ✅ relatório markdown + comparar repos no portfolio |
 | **Fase 12 Evolve** | ✅ scan + pilot + verify em um fluxo |
 | **Fase 13 Alertas** | ✅ alertas portfolio + monitorar repo na UI |
+| **Fase 14 Batch** | ✅ evolve batch críticos + publicar issues no GitHub |
+| **Fase 15 Chart** | ✅ gráfico de health do portfolio na UI |
 
 ### Fase 3 (local-first)
 
@@ -144,6 +147,21 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Alertas de portfolio | `GET /api/portfolio/alerts?root=` |
 | Monitorar repo | Checkbox na UI (re-scan automático) |
 | Ação rápida em alerta | Botões Scan / Evoluir |
+
+### Fase 14 (batch evolve + issues API)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Evoluir críticos em lote | `npm run evolve-batch -- [root] [--dry-run]` · `POST /api/portfolio/evolve-batch` |
+| Publicar issues no GitHub | `POST /api/github/publish-issues` · botões na UI |
+| Preview batch / issues | `--dry-run` · **Preview batch** / **Preview publicar** |
+
+### Fase 15 (portfolio chart)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Gráfico de barras por repo | `GET /api/portfolio` (campo `chart`) |
+| SVG exportável | `GET /api/portfolio/chart?format=svg` |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioAlert, PortfolioAlertsSummary, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -49,7 +49,7 @@ export function applyRules(analysisId: number) {
 }
 
 export function getPortfolio(root = 'c:\\_PROJETOS') {
-  return api<{ root: string; summary: PortfolioSummary; items: PortfolioItem[] }>(
+  return api<{ root: string; summary: PortfolioSummary; items: PortfolioItem[]; chart?: PortfolioChart }>(
     `/api/portfolio?root=${encodeURIComponent(root)}`,
   )
 }
@@ -157,4 +157,18 @@ export function getPortfolioAlerts(root: string) {
   return api<{ root: string; alerts: PortfolioAlert[]; summary: PortfolioAlertsSummary }>(
     `/api/portfolio/alerts?root=${encodeURIComponent(root)}`,
   )
+}
+
+export function evolvePortfolioBatch(root: string, dryRun = false, max = 3) {
+  return api<EvolveBatchResult>('/api/portfolio/evolve-batch', {
+    method: 'POST',
+    body: JSON.stringify({ root, dryRun, max, level: 'critical' }),
+  })
+}
+
+export function publishIssuesToGithub(analysisId: number, ownerRepo?: string, dryRun = false) {
+  return api<IssuesPublishResult>('/api/github/publish-issues', {
+    method: 'POST',
+    body: JSON.stringify({ analysisId, ownerRepo, dryRun, max: 5 }),
+  })
 }

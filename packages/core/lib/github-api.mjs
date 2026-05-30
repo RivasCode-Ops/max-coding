@@ -43,6 +43,15 @@ export async function postIssueComment(ownerRepo, issueNumber, body) {
   })
 }
 
+export async function createGithubIssue(ownerRepo, { title, body, labels = [] }) {
+  const [owner, repo] = ownerRepo.split('/')
+  return githubRequest(`/repos/${owner}/${repo}/issues`, {
+    method: 'POST',
+    ownerRepo,
+    body: { title, body, labels },
+  })
+}
+
 export async function listPullRequestFiles(ownerRepo, pullNumber) {
   const [owner, repo] = ownerRepo.split('/')
   return githubRequest(`/repos/${owner}/${repo}/pulls/${pullNumber}/files`, { ownerRepo })

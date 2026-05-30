@@ -482,3 +482,73 @@ tr.portfolio-active td {
   background: rgba(59, 130, 246, 0.12);
   border-left: 3px solid #3b82f6;
 }
+
+.batch-box {
+  margin: 10px 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0b1220;
+  border: 1px solid #334155;
+  font-size: 0.9rem;
+}
+
+.batch-log {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.batch-log li.fail {
+  color: #f87171;
+}
+
+.portfolio-chart-wrap {
+  margin: 12px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #0b1220;
+  border: 1px solid #334155;
+}
+
+.portfolio-bars {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.portfolio-bars li {
+  display: grid;
+  grid-template-columns: 120px 1fr 52px;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+.bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #94a3b8;
+}
+
+.bar-track {
+  height: 10px;
+  background: #1e293b;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  min-width: 2px;
+}
+
+.bar-value {
+  text-align: right;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+}

@@ -39,6 +39,10 @@ export function generateIssuesMarkdown(result, options = {}) {
   return lines.join('\n')
 }
 
+export function pickIssueItems(result, max = 8) {
+  return pickItems(result, max)
+}
+
 function pickItems(result, max) {
   const fromBacklog = (result.backlog || []).map((b) => ({
     title: b.title,

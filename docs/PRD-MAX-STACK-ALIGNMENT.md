@@ -116,6 +116,19 @@
 - `GET /api/portfolio/alerts`
 - UI monitorar repo + painel de alertas
 
+### Bloco P — Fase 14 Batch (v0.16) ✅
+
+- `evolve-batch.mjs` — evolve até N repos com alertas críticos
+- `issues-publish.mjs` — criar issues via GitHub REST API
+- `npm run evolve-batch` + UI **Evoluir críticos**
+- `POST /api/github/publish-issues` + UI **Publicar no GitHub**
+
+### Bloco Q — Fase 15 Chart (v0.17) ✅
+
+- `portfolio-chart.mjs` — barras de health + buckets (excelente/ok/atenção)
+- `GET /api/portfolio/chart` · SVG opcional
+- UI `PortfolioHealthChart` no portfolio
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -135,3 +148,5 @@
 - [x] Fase 11 Export (relatório + comparar repos)
 - [x] Fase 12 Evolve (scan + pilot + verify)
 - [x] Fase 13 Alertas (portfolio alerts + watch UI)
+- [x] Fase 14 Batch (evolve batch + publish issues GitHub)
+- [x] Fase 15 Chart (gráfico health portfolio)

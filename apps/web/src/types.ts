@@ -102,6 +102,27 @@ export type PortfolioAlertsSummary = {
   total: number
 }
 
+export type PortfolioChartBar = {
+  slug: string
+  health: number
+  grade?: string
+  color: string
+}
+
+export type PortfolioChartBuckets = {
+  excellent: number
+  good: number
+  attention: number
+}
+
+export type PortfolioChart = {
+  bars: PortfolioChartBar[]
+  buckets: PortfolioChartBuckets
+  averageHealth: number
+  total: number
+  withHealth: number
+}
+
 export type EvolveResult = {
   dryRun: boolean
   summary: string
@@ -111,6 +132,33 @@ export type EvolveResult = {
   final: { health?: { summary: string; overall: number }; analysisId?: number }
   context?: RepoContext
   reportMarkdown?: string
+}
+
+export type EvolveBatchItemResult = {
+  ok: boolean
+  slug: string
+  path: string
+  summary?: string
+  healthDelta?: number
+  verdict?: string
+  baseline?: string
+  final?: string
+  error?: string
+}
+
+export type EvolveBatchResult = {
+  root?: string
+  dryRun: boolean
+  summary: string
+  targets: number
+  results: EvolveBatchItemResult[]
+}
+
+export type IssuesPublishResult = {
+  ownerRepo: string
+  dryRun: boolean
+  count: number
+  issues: { title: string; priority?: number; preview?: boolean; labels?: string[]; number?: number; url?: string }[]
 }
 
 export type RepoCompareResult = {

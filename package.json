@@ -1,6 +1,6 @@
 {
   "name": "max-coding",
-  "version": "0.15.0",
+  "version": "0.17.0",
   "private": true,
   "description": "Max Stack — auditoria evolutiva local-first de repositórios",
   "type": "module",
@@ -27,6 +27,7 @@
     "verify": "node packages/core/bin/verify.mjs",
     "report": "node packages/core/bin/report.mjs",
     "evolve": "node packages/core/bin/evolve.mjs",
+    "evolve-batch": "node packages/core/bin/evolve-batch.mjs",
     "test": "node --test --test-concurrency=1 tests/**/*.test.mjs"
   }
 }

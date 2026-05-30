@@ -203,6 +203,26 @@ await step('Portfolio alerts (Fase 13)', async () => {
   ok(`${summary.total} alertas · ${summary.critical} críticos`)
 })
 
+await step('Evolve batch + issues publish (Fase 14)', async () => {
+  const { pickEvolveTargets } = await import('./packages/core/lib/evolve-batch.mjs')
+  const { publishIssuesToGithub } = await import('./packages/core/lib/issues-publish.mjs')
+  const result = await analyzeRepository(ROOT, { mode: 'quick', writeReports: false })
+  const preview = await publishIssuesToGithub(result, { ownerRepo: 'org/demo', dryRun: true, max: 2 })
+  const targets = pickEvolveTargets([{ level: 'critical', action: 'evolve', slug: 'x', path: ROOT, code: 'low-health' }])
+  if (!preview.count || !targets.length) throw new Error('fase 14 preview falhou')
+  ok(`issues preview ${preview.count} · ${targets.length} alvo(s) batch`)
+})
+
+await step('Portfolio chart (Fase 15)', async () => {
+  const { buildPortfolioChartData } = await import('./packages/core/lib/portfolio-chart.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import('./packages/core/lib/portfolio.mjs')
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const chart = buildPortfolioChartData(items)
+  if (!chart.bars.length) throw new Error('chart vazio')
+  ok(`${chart.bars.length} barras · média ${chart.averageHealth}`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

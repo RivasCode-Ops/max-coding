@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisReport, getPortfolio, getPortfolioAlerts, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, rescanPortfolio, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioAlert, PortfolioAlertsSummary, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisReport, getPortfolio, getPortfolioAlerts, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport } from './types'
 import HealthTrendChart from './HealthTrendChart'
+import PortfolioHealthChart from './PortfolioHealthChart'
 import './App.css'
 
 export default function App() {
@@ -14,7 +15,7 @@ export default function App() {
   const [validation, setValidation] = useState<AnalysisResult['repoValidation'] | null>(null)
   const [feedbackSent, setFeedbackSent] = useState<Record<string, 'up' | 'down'>>({})
   const [portfolioRoot, setPortfolioRoot] = useState('c:\\_PROJETOS')
-  const [portfolio, setPortfolio] = useState<{ summary: PortfolioSummary; items: PortfolioItem[] } | null>(null)
+  const [portfolio, setPortfolio] = useState<{ summary: PortfolioSummary; items: PortfolioItem[]; chart?: PortfolioChart } | null>(null)
   const [prOwnerRepo, setPrOwnerRepo] = useState('RivasCode-Ops/Quadro-Negro')
   const [prNumber, setPrNumber] = useState('1')
   const [prPreview, setPrPreview] = useState<string | null>(null)
@@ -37,6 +38,8 @@ export default function App() {
   const [watchOn, setWatchOn] = useState(false)
   const [watchInterval, setWatchInterval] = useState(300)
   const [watchLog, setWatchLog] = useState<{ at: string; health: string; delta?: number }[]>([])
+  const [batchEvolveResult, setBatchEvolveResult] = useState<EvolveBatchResult | null>(null)
+  const [issuesPublishResult, setIssuesPublishResult] = useState<IssuesPublishResult | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -82,7 +85,7 @@ export default function App() {
   async function refreshPortfolio() {
     try {
       const p = await getPortfolio(portfolioRoot)
-      setPortfolio({ summary: p.summary, items: p.items })
+      setPortfolio({ summary: p.summary, items: p.items, chart: p.chart })
       const a = await getPortfolioAlerts(portfolioRoot)
       setPortfolioAlerts({ alerts: a.alerts, summary: a.summary })
     } catch {
@@ -371,6 +374,42 @@ export default function App() {
     try {
       const p = await rescanPortfolio(portfolioRoot)
       setPortfolio({ summary: p.summary, items: p.items })
+      await refreshPortfolio()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runBatchEvolve(dryRun: boolean) {
+    if (!portfolioAlerts?.summary.critical) {
+      return alert('Nenhum alerta crítico no portfolio')
+    }
+    setBusy(true)
+    setBatchEvolveResult(null)
+    try {
+      const r = await evolvePortfolioBatch(portfolioRoot, dryRun, 3)
+      setBatchEvolveResult(r)
+      await refreshPortfolio()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runPublishIssues(dryRun: boolean) {
+    if (!result?.analysisId) return alert('Faça uma análise primeiro')
+    const ownerRepo = repoContext?.ownerRepo || result.repo?.ownerRepo || prOwnerRepo.trim() || undefined
+    setBusy(true)
+    setIssuesPublishResult(null)
+    try {
+      const r = await publishIssuesToGithub(result.analysisId, ownerRepo, dryRun)
+      setIssuesPublishResult(r)
+      if (!dryRun && r.count) {
+        alert(`${r.count} issue(s) criada(s) em ${r.ownerRepo}`)
+      }
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erro')
     } finally {
@@ -672,6 +711,28 @@ export default function App() {
               Alertas: {portfolioAlerts.summary.critical} críticos · {portfolioAlerts.summary.warning} avisos ·{' '}
               {portfolioAlerts.summary.info} info
             </strong>
+            {portfolioAlerts.summary.critical > 0 && (
+              <div className="row">
+                <button type="button" className="cursor-btn" disabled={busy} onClick={() => runBatchEvolve(false)}>
+                  Evoluir críticos (até 3)
+                </button>
+                <button type="button" className="secondary" disabled={busy} onClick={() => runBatchEvolve(true)}>
+                  Preview batch
+                </button>
+              </div>
+            )}
+            {batchEvolveResult && (
+              <div className="batch-box">
+                <strong>{batchEvolveResult.summary}</strong>
+                <ul className="batch-log">
+                  {batchEvolveResult.results.map((r) => (
+                    <li key={r.slug} className={r.ok ? 'ok' : 'fail'}>
+                      {r.slug}: {r.ok ? r.summary : r.error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <ul className="alerts-list">
               {portfolioAlerts.alerts.slice(0, 8).map((a) => (
                 <li key={`${a.slug}-${a.code}`} className={`alert-${a.level}`}>
@@ -690,6 +751,13 @@ export default function App() {
               {portfolio.summary.total} repos · média {portfolio.summary.averageHealth}/100 ·{' '}
               {portfolio.summary.needsAttention.length} precisam atenção (&lt;70)
             </p>
+            {portfolio.chart && (
+              <PortfolioHealthChart
+                bars={portfolio.chart.bars}
+                buckets={portfolio.chart.buckets}
+                averageHealth={portfolio.chart.averageHealth}
+              />
+            )}
             {activeSlug && portfolio.items.length > 1 && (
               <div className="compare-row">
                 <label>Comparar {activeSlug} com</label>
@@ -1127,16 +1195,39 @@ export default function App() {
           {result.issuesMarkdown && (
             <section className="card">
               <h2>Issues GitHub (sugeridas)</h2>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  navigator.clipboard.writeText(result.issuesMarkdown || '')
-                  alert('Issues copiadas!')
-                }}
-              >
-                Copiar issues
-              </button>
+              <div className="row">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.issuesMarkdown || '')
+                    alert('Issues copiadas!')
+                  }}
+                >
+                  Copiar issues
+                </button>
+                <button type="button" className="cursor-btn" disabled={busy || !result.analysisId} onClick={() => runPublishIssues(false)}>
+                  Publicar no GitHub
+                </button>
+                <button type="button" className="secondary" disabled={busy || !result.analysisId} onClick={() => runPublishIssues(true)}>
+                  Preview publicar
+                </button>
+              </div>
+              {issuesPublishResult && (
+                <div className="batch-box">
+                  <strong>
+                    {issuesPublishResult.dryRun ? 'Preview' : 'Publicado'} — {issuesPublishResult.ownerRepo} ({issuesPublishResult.count})
+                  </strong>
+                  <ul className="batch-log">
+                    {issuesPublishResult.issues.map((i) => (
+                      <li key={i.title}>
+                        {i.title}
+                        {i.url ? ` → ${i.url}` : i.preview ? ' (preview)' : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <pre className="rules-preview">{result.issuesMarkdown.slice(0, 900)}…</pre>
             </section>
           )}
