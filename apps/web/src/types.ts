@@ -125,6 +125,29 @@ export type NotificationConfig = {
   onFailure: boolean
 }
 
+export type WatchScheduleConfig = {
+  taskName: string
+  root: string
+  intervalMinutes: number
+  installed: boolean
+  installedAt: string | null
+  lastStatus: string | null
+}
+
+export type WatchScheduleStatus = {
+  supported: boolean
+  platform: string
+  config: WatchScheduleConfig
+  task: {
+    installed: boolean
+    taskName?: string
+    status?: string | null
+    nextRun?: string | null
+    lastRun?: string | null
+  }
+  repoRoot?: string
+}
+
 export type PortfolioChartBar = {
   slug: string
   health: number

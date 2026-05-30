@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry, WatchScheduleStatus } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
 import PortfolioHistoryPanel from './PortfolioHistoryPanel'
@@ -92,6 +92,9 @@ export default function App() {
     onFailure: true,
   })
   const [notifyMsg, setNotifyMsg] = useState<string | null>(null)
+  const [watchSchedule, setWatchSchedule] = useState<WatchScheduleStatus | null>(null)
+  const [scheduleIntervalMin, setScheduleIntervalMin] = useState(60)
+  const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -127,13 +130,23 @@ export default function App() {
         setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
-      if (s.version && s.version !== '0.25.0') {
+      if (s.version && s.version !== '0.26.0') {
         setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
       }
       const h = await listHistory()
       setHistory(h.items)
     } catch {
       setStatus('Offline — rode npm start na raiz do max-coding')
+    }
+  }
+
+  async function loadWatchSchedule() {
+    try {
+      const s = await getWatchScheduleStatus()
+      setWatchSchedule(s)
+      setScheduleIntervalMin(s.config.intervalMinutes || 60)
+    } catch {
+      setWatchSchedule(null)
     }
   }
 
@@ -271,6 +284,7 @@ export default function App() {
   async function refresh() {
     await refreshHistory()
     await loadNotifyConfig()
+    await loadWatchSchedule()
     await refreshPortfolio()
   }
 
@@ -965,6 +979,72 @@ export default function App() {
           </button>
         </div>
         {notifyMsg && <p className="hint">{notifyMsg}</p>}
+        <h3 className="subhead">Agendamento watch (Windows)</h3>
+        {watchSchedule && !watchSchedule.supported && (
+          <p className="hint">Task Scheduler disponível só no Windows ({watchSchedule.platform}).</p>
+        )}
+        {watchSchedule?.supported && (
+          <div className="goals-row">
+            <label>
+              Intervalo (min)
+              <input
+                type="number"
+                min={5}
+                max={1440}
+                value={scheduleIntervalMin}
+                onChange={(e) => setScheduleIntervalMin(Number(e.target.value))}
+              />
+            </label>
+            <button
+              type="button"
+              className="tiny secondary"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                setScheduleMsg(null)
+                try {
+                  const r = await installWatchSchedule(portfolioRoot, scheduleIntervalMin)
+                  if (!r.ok) throw new Error(r.message || 'Falha ao instalar')
+                  await loadWatchSchedule()
+                  setScheduleMsg(`Tarefa ${r.config.taskName} instalada`)
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : 'Erro')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              Instalar tarefa
+            </button>
+            <button
+              type="button"
+              className="tiny secondary"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                setScheduleMsg(null)
+                try {
+                  await removeWatchSchedule()
+                  await loadWatchSchedule()
+                  setScheduleMsg('Tarefa removida')
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : 'Erro')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              Remover
+            </button>
+          </div>
+        )}
+        {watchSchedule?.task.installed && (
+          <p className="hint">
+            {watchSchedule.task.taskName} · {watchSchedule.task.status || '—'}
+            {watchSchedule.task.nextRun ? ` · próxima: ${watchSchedule.task.nextRun}` : ''}
+          </p>
+        )}
+        {scheduleMsg && <p className="hint">{scheduleMsg}</p>}
         <label>Pasta raiz</label>
         <input value={portfolioRoot} onChange={(e) => setPortfolioRoot(e.target.value)} />
         <button type="button" className="secondary" disabled={busy} onClick={() => refresh()}>

@@ -179,6 +179,13 @@
 - `npm run notify-config` · `GET/POST /api/notifications/config` · `POST /api/notifications/test`
 - UI **Notificações** no portfolio · env `MAX_NOTIFY_*`
 
+### Bloco Z — Fase 24 Watch schedule (v0.26) ✅
+
+- `watch-scheduler.mjs` — instalar/remover tarefa Windows (`schtasks`)
+- `watch-portfolio --once` — tick único para o agendador
+- `npm run watch-schedule` · `GET /api/watch-schedule/status` · install/remove
+- UI **Agendamento watch** no portfolio
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -208,3 +215,4 @@
 - [x] Fase 21 Quality (sinais de qualidade explícitos)
 - [x] Fase 22 Goals (metas de health no portfolio)
 - [x] Fase 23 Notify (notificações watch → arquivo/webhook)
+- [x] Fase 24 Watch schedule (Task Scheduler Windows + `--once`)

@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -251,6 +251,24 @@ export function saveNotificationConfig(config: NotificationConfig) {
 export function testNotification() {
   return api<{ ok: boolean; channels: string[]; payload?: { type: string; message?: string } }>(
     '/api/notifications/test',
+    { method: 'POST', body: '{}' },
+  )
+}
+
+export function getWatchScheduleStatus() {
+  return api<WatchScheduleStatus>('/api/watch-schedule/status')
+}
+
+export function installWatchSchedule(root: string, intervalMinutes: number) {
+  return api<{ ok: boolean; config: WatchScheduleStatus['config']; message?: string }>(
+    '/api/watch-schedule/install',
+    { method: 'POST', body: JSON.stringify({ root, intervalMinutes }) },
+  )
+}
+
+export function removeWatchSchedule() {
+  return api<{ ok: boolean; config: WatchScheduleStatus['config']; message?: string }>(
+    '/api/watch-schedule/remove',
     { method: 'POST', body: '{}' },
   )
 }

@@ -10,11 +10,14 @@ import { runPortfolioWatchTick } from '../lib/portfolio-watch.mjs'
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'))
 const dryRun = process.argv.includes('--dry-run')
+const once = process.argv.includes('--once')
 const root = resolve(args[0] || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
 const intervalSec = Number(args[1] || 3600)
 
 console.log(
-  `Max Stack watch portfolio — ${root} a cada ${intervalSec}s${dryRun ? ' (dry-run)' : ''} (Ctrl+C para parar)\n`,
+  once
+    ? `Max Stack watch portfolio (once) — ${root}${dryRun ? ' (dry-run)' : ''}\n`
+    : `Max Stack watch portfolio — ${root} a cada ${intervalSec}s${dryRun ? ' (dry-run)' : ''} (Ctrl+C para parar)\n`,
 )
 
 async function tick() {
@@ -37,7 +40,7 @@ async function tick() {
 }
 
 await tick()
-if (dryRun) {
+if (dryRun || once) {
   closeDb()
   process.exit(0)
 }

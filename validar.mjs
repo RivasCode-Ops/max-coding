@@ -306,6 +306,17 @@ await step('Notifications (Fase 23)', async () => {
   ok(`${out.dispatched} evento(s) · ${file.split(/[/\\]/).pop()}`)
 })
 
+await step('Watch schedule (Fase 24)', async () => {
+  const { getWatchScheduleStatus, buildWatchTaskAction, schtasksScheduleArgs } = await import(
+    './packages/core/lib/watch-scheduler.mjs'
+  )
+  const status = getWatchScheduleStatus(getDb())
+  const cmd = buildWatchTaskAction({ root: ROOT, repoRoot: ROOT })
+  const sched = schtasksScheduleArgs(60)
+  if (!cmd.includes('--once') || sched.sc !== 'HOURLY') throw new Error('watch schedule inválido')
+  ok(`${status.platform} · suportado=${status.supported} · task=${status.task.installed ? 'sim' : 'não'}`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

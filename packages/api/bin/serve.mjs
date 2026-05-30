@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.25.0',
+      version: '0.26.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -259,6 +259,31 @@ async function handle(req, res) {
   if (path === '/api/notifications/test' && req.method === 'POST') {
     const { sendTestNotification } = await import('../../core/lib/notifications.mjs')
     const result = await sendTestNotification(getDb())
+    return sendJson(res, 200, result)
+  }
+
+  if (path === '/api/watch-schedule/status' && req.method === 'GET') {
+    const { getWatchScheduleStatus } = await import('../../core/lib/watch-scheduler.mjs')
+    return sendJson(res, 200, getWatchScheduleStatus(getDb()))
+  }
+
+  if (path === '/api/watch-schedule/install' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { installWatchTask } = await import('../../core/lib/watch-scheduler.mjs')
+    const result = installWatchTask(getDb(), {
+      root: body.root,
+      intervalMinutes: body.intervalMinutes,
+      taskName: body.taskName,
+      repoRoot: ROOT,
+    })
+    if (!result.ok) return sendJson(res, 400, result)
+    return sendJson(res, 200, result)
+  }
+
+  if (path === '/api/watch-schedule/remove' && req.method === 'POST') {
+    const { removeWatchTask } = await import('../../core/lib/watch-scheduler.mjs')
+    const result = removeWatchTask(getDb())
+    if (!result.ok) return sendJson(res, 400, result)
     return sendJson(res, 200, result)
   }
 

@@ -32,11 +32,13 @@ npm run portfolio-goals                    # ver metas de health
 npm run portfolio-goals -- set 75 90     # meta mín 75 · alvo 90
 npm run notify-config                    # ver config de notificações
 npm run notify-config -- test            # teste arquivo/webhook
+npm run watch-schedule                   # status da tarefa Windows
+npm run watch-schedule -- install c:\_PROJETOS 60
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.25)
+## V1 PRD — status (v0.26)
 
 Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 
@@ -245,6 +247,14 @@ Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 | Arquivo JSONL + webhook | `npm run notify-config` · `MAX_NOTIFY_FILE` · `MAX_NOTIFY_WEBHOOK_URL` |
 | Watch portfolio | dispara em regressão (Δ≤−5), crítico ou falha de scan |
 | API + UI | `GET/POST /api/notifications/config` · **Notificações** no portfolio |
+
+### Fase 24 (watch schedule)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Task Scheduler Windows | `npm run watch-schedule` · `install` / `remove` |
+| Tick único | `npm run watch-portfolio -- <root> --once` |
+| API + UI | `GET /api/watch-schedule/status` · **Agendamento watch** |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 
