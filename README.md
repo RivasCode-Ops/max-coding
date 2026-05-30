@@ -35,11 +35,12 @@ npm run notify-config -- test            # teste arquivo/webhook
 npm run watch-schedule                   # status da tarefa Windows
 npm run watch-schedule -- install c:\_PROJETOS 60
 npm run portfolio-scorecard -- c:\_PROJETOS 10
+npm run apply-plan -- c:\_PROJETOS\Meu-Repo --approve rec-001,rec-002 --verify
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.27)
+## V1 PRD — status (v0.28)
 
 Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 
@@ -264,6 +265,14 @@ Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 | Bundle exportável | `npm run portfolio-scorecard -- [root] [max]` |
 | Conteúdo | digest.md · chart.svg · heatmap.svg · scorecards/*.md |
 | Download | `GET /api/portfolio/scorecard` · UI **Scorecard ZIP** |
+
+### Fase 26 (apply plan)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Fluxo autorizado | plan → aprovar itens → Cursor tasks → verify |
+| CLI | `npm run apply-plan -- <path> --approve id1,id2 [--verify]` |
+| API + UI | `GET .../plan-apply` · `POST /api/plan/apply` · **Aplicar plano** |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

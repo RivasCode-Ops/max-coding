@@ -330,6 +330,17 @@ await step('Portfolio scorecard ZIP (Fase 25)', async () => {
   ok(`${zip.fileCount} arquivos · ${zip.manifest.scorecardCount} scorecards`)
 })
 
+await step('Apply plan workflow (Fase 26)', async () => {
+  const { buildPlanApplyView, applyApprovedPlanItems } = await import('./packages/core/lib/apply-plan.mjs')
+  const result = await analyzeRepository(ROOT, { mode: 'deep', auditMode: 'plan', writeReports: false, githubSearch: false })
+  const view = buildPlanApplyView(result)
+  if (!view.items.length) throw new Error('plan apply view vazio')
+  const approved = view.items.filter((i) => i.suggested && i.applyable).slice(0, 2).map((i) => i.backlogId)
+  const run = applyApprovedPlanItems(result, approved, { writeFile: false })
+  if (approved.length && !run.count) throw new Error('apply plan não gerou tasks')
+  ok(`${view.applyableCount} applyable · ${run.count} task(s) preview`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

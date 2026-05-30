@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.27.0',
+      version: '0.28.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -127,6 +127,11 @@ async function handle(req, res) {
         return sendJson(res, 200, { markdown, slug: row.slug, auditMode: 'plan' })
       }
       return sendJson(res, 200, { slug: row.slug, package: buildPlanPackage(row.data) })
+    }
+    if (sub === 'plan-apply') {
+      const { buildPlanApplyView } = await import('../../core/lib/apply-plan.mjs')
+      const view = buildPlanApplyView({ ...row.data, analysisId: row.id })
+      return sendJson(res, 200, view)
     }
     return sendJson(res, 200, row)
   }
@@ -662,6 +667,44 @@ async function handle(req, res) {
       validateRepo: Boolean(validateRepo),
     })
     return sendJson(res, 200, report)
+  }
+
+  if (path === '/api/plan/apply' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { analysisId, approvedIds = [], verifyAfter = false, validateRepo = true, dryRun = false } = body
+    if (!analysisId) return sendJson(res, 400, { error: 'analysisId obrigatório' })
+    const row = getAnalysis(getDb(), Number(analysisId))
+    if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+    const analysisResult = {
+      ...row.data,
+      analysisId: row.id,
+      repo: row.data.repo || { path: row.path, slug: row.slug },
+    }
+    const { executePlanWorkflow } = await import('../../core/lib/apply-plan.mjs')
+    const result = await executePlanWorkflow(analysisResult, approvedIds, {
+      verifyAfter: Boolean(verifyAfter),
+      validateRepo: Boolean(validateRepo),
+      writeFile: !dryRun,
+      baselineAnalysisId: row.id,
+    })
+    if (!dryRun) {
+      const { saveCursorTaskRecord } = await import('../../core/lib/task-registry.mjs')
+      for (const a of result.apply.applied) {
+        if (a.result?.written && analysisResult.repo?.slug) {
+          saveCursorTaskRecord(getDb(), {
+            repoSlug: analysisResult.repo.slug,
+            repoPath: analysisResult.repo.path,
+            taskId: a.recommendationId,
+            recommendationId: a.recommendationId,
+            title: a.title,
+            relativePath: a.result.written.relative,
+            pilotFix: a.result.pilotFix,
+            status: 'pending',
+          })
+        }
+      }
+    }
+    return sendJson(res, 200, result)
   }
 
   if (path === '/api/plan' && req.method === 'POST') {

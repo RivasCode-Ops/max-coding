@@ -6,6 +6,7 @@ import PortfolioHealthChart from './PortfolioHealthChart'
 import PortfolioHistoryPanel from './PortfolioHistoryPanel'
 import PortfolioHeatmapPanel from './PortfolioHeatmap'
 import QualitySignalsPanel from './QualitySignalsPanel'
+import PlanApplyPanel from './PlanApplyPanel'
 import './App.css'
 
 const EMPTY_PORTFOLIO_SUMMARY: PortfolioSummary = {
@@ -130,7 +131,7 @@ export default function App() {
         setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
-      if (s.version && s.version !== '0.27.0') {
+      if (s.version && s.version !== '0.28.0') {
         setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
       }
       const h = await listHistory()
@@ -1681,6 +1682,20 @@ export default function App() {
                 </div>
               )}
               <pre className="rules-preview">{result.issuesMarkdown.slice(0, 900)}…</pre>
+            </section>
+          )}
+
+          {result.backlog && result.backlog.length > 0 && result.analysisId && (
+            <section className="card">
+              <h2>Aplicar plano (Fase 26)</h2>
+              <PlanApplyPanel
+                analysisId={result.analysisId}
+                repoPath={result.repo?.path}
+                busy={busy}
+                setBusy={setBusy}
+                onTasksCreated={() => result.repo?.path && loadCursorTasks(result.repo.path)}
+                onVerified={(report) => setVerifyReport(report)}
+              />
             </section>
           )}
 

@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanApplyResult, PlanApplyView, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -161,6 +161,17 @@ export function exportPlan(path: string, analysisId?: number) {
   return api<{ markdown: string; slug: string; auditMode: 'plan'; package: PlanPackage }>('/api/plan', {
     method: 'POST',
     body: JSON.stringify({ path, analysisId, includeIssues: true }),
+  })
+}
+
+export function getPlanApplyView(analysisId: number) {
+  return api<PlanApplyView>(`/api/analyses/${analysisId}/plan-apply`)
+}
+
+export function applyPlanItems(analysisId: number, approvedIds: string[], verifyAfter = false, dryRun = false) {
+  return api<PlanApplyResult>('/api/plan/apply', {
+    method: 'POST',
+    body: JSON.stringify({ analysisId, approvedIds, verifyAfter, dryRun }),
   })
 }
 

@@ -192,6 +192,12 @@
 - `npm run portfolio-scorecard` · `GET /api/portfolio/scorecard`
 - UI botão **Scorecard ZIP**
 
+### Bloco AB — Fase 26 Apply plan (v0.28) ✅
+
+- `apply-plan.mjs` — aprovar backlog → cursor tasks → verify opcional
+- `npm run apply-plan` · `GET /api/analyses/:id/plan-apply` · `POST /api/plan/apply`
+- UI **Aplicar plano** com checkboxes e fluxo verificar
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -223,3 +229,4 @@
 - [x] Fase 23 Notify (notificações watch → arquivo/webhook)
 - [x] Fase 24 Watch schedule (Task Scheduler Windows + `--once`)
 - [x] Fase 25 Scorecard ZIP (digest + heatmap/chart SVG + scorecards)
+- [x] Fase 26 Apply plan (aprovar backlog → Cursor → verify)

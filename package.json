@@ -1,6 +1,6 @@
 {
   "name": "max-coding",
-  "version": "0.27.0",
+  "version": "0.28.0",
   "private": true,
   "description": "Max Stack — auditoria evolutiva local-first de repositórios",
   "type": "module",
@@ -38,6 +38,7 @@
     "notify-config": "node packages/core/bin/notify-config.mjs",
     "watch-schedule": "node packages/core/bin/watch-schedule.mjs",
     "portfolio-scorecard": "node packages/core/bin/portfolio-scorecard.mjs",
+    "apply-plan": "node packages/core/bin/apply-plan.mjs",
     "test": "node --test --test-concurrency=1 tests/**/*.test.mjs"
   }
 }

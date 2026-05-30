@@ -393,6 +393,38 @@ export type PlanPackage = {
   counts: { backlog: number; checklist: number; prCommits: number; recommendations: number }
 }
 
+export type PlanApplyItem = {
+  backlogId: string
+  recommendationId: string | null
+  title: string
+  priority: number
+  tasks: string[]
+  applyable: boolean
+  suggested: boolean
+}
+
+export type PlanApplyView = {
+  slug: string
+  path?: string
+  analysisId?: number
+  authorization: PlanPackage['authorization']
+  verification: PlanPackage['verification']
+  items: PlanApplyItem[]
+  applyableCount: number
+  suggestedIds: string[]
+}
+
+export type PlanApplyResult = {
+  phase: 'plan-apply'
+  summary: string
+  apply: {
+    count: number
+    applied: { title: string; backlogId: string; recommendationId?: string | null; result?: CursorApplyResult }[]
+    skipped: { title: string; reason: string }[]
+  }
+  verify?: VerificationReport | null
+}
+
 export type WatchLogEntry = {
   slug: string
   path?: string

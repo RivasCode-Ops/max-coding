@@ -510,6 +510,20 @@ tr.portfolio-active td {
   font-size: 0.9rem;
 }
 
+.plan-apply-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+
+.plan-apply-list li {
+  padding: 4px 0;
+}
+
+.plan-apply-list li.disabled {
+  opacity: 0.55;
+}
+
 .batch-log {
   list-style: none;
   padding: 0;
