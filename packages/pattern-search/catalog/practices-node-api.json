@@ -1,0 +1,41 @@
+{
+  "stack": "node-api",
+  "domain": "node-backend",
+  "references": [
+    { "repo": "fastify/fastify", "url": "https://github.com/fastify/fastify", "patterns": ["plugins", "schema-validation", "testing"] },
+    { "repo": "expressjs/express", "url": "https://github.com/expressjs/express", "patterns": ["middleware", "routing"] }
+  ],
+  "practices": [
+    {
+      "id": "test_script",
+      "category": "testes",
+      "requiredSignalAbsent": "has_tests_or_validar",
+      "alsoIfSignal": "gap_no_test_script",
+      "referencePattern": "APIs Node expõem node:test ou jest",
+      "suggestedUpgrade": "Adicionar node:test ou vitest",
+      "impact": "alto",
+      "effort": "medio",
+      "risk": "baixo"
+    },
+    {
+      "id": "ci_workflow",
+      "category": "infraestrutura",
+      "requiredSignalAbsent": "has_ci",
+      "referencePattern": "CI mínima build+test",
+      "suggestedUpgrade": "GitHub Actions workflow",
+      "impact": "alto",
+      "effort": "baixo",
+      "risk": "baixo"
+    },
+    {
+      "id": "cursor_rules",
+      "category": "dx",
+      "requiredSignalAbsent": "has_cursor_rules",
+      "referencePattern": "Regras Cursor para API Node",
+      "suggestedUpgrade": "Criar .cursor/rules/projeto.mdc",
+      "impact": "medio",
+      "effort": "baixo",
+      "risk": "baixo"
+    }
+  ]
+}

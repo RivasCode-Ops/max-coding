@@ -1,15 +1,24 @@
 /**
  * Gera recommendations.json a partir de profile + catálogo de práticas.
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dir = dirname(fileURLToPath(import.meta.url))
-const CATALOG = join(__dir, '../../pattern-search/catalog/practices-vite-kanban.json')
+const CATALOG_DIR = join(__dir, '../../pattern-search/catalog')
+
+export function pickCatalogFile(profile) {
+  const fw = profile.summary?.frameworks || []
+  if (fw.includes('vite')) return join(CATALOG_DIR, 'practices-vite-kanban.json')
+  if (fw.includes('next')) return join(CATALOG_DIR, 'practices-next-app.json')
+  if (fw.includes('streamlit')) return join(CATALOG_DIR, 'practices-streamlit.json')
+  return join(CATALOG_DIR, 'practices-node-api.json')
+}
 
 export function recommendFromProfile(profile) {
-  const catalog = JSON.parse(readFileSync(CATALOG, 'utf8'))
+  const catalogPath = pickCatalogFile(profile)
+  const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
   const signalIds = new Set((profile.signals || []).map((s) => s.id))
   const refs = catalog.references || []
   const out = []
@@ -23,13 +32,12 @@ export function recommendFromProfile(profile) {
     if (practice.alsoIfSignal && signalIds.has(practice.alsoIfSignal)) {
       applies = true
     }
-    if (!practice.requiredSignalAbsent && !practice.alsoIfSignal) {
-      applies = profile.summary?.frameworks?.includes('vite')
+    if (!practice.requiredSignalAbsent && !practice.alsoIfSignal && practice.stackMatch) {
+      applies = (profile.summary?.frameworks || []).includes(practice.stackMatch)
     }
     if (!applies) continue
 
     n += 1
-    const ref = refs[0]
     out.push({
       id: `rec-${String(n).padStart(3, '0')}`,
       category: practice.category,
@@ -44,22 +52,23 @@ export function recommendFromProfile(profile) {
       priority: scorePriority(practice),
       affectedAreas: inferAreas(practice.id),
       executionMode: 'recommendation',
+      catalogId: catalog.stack || 'generic',
     })
   }
 
   out.sort((a, b) => a.priority - b.priority)
-  return { recommendations: out, references: refs }
+  return { recommendations: out, references: refs, catalogId: catalog.stack || 'generic' }
 }
 
 function buildProblem(practice, profile, signalIds) {
   if (practice.id === 'test_script') {
-    return `Repo ${profile.slug}: sem script test confiável (gap_no_test_script=${signalIds.has('gap_no_test_script')})`
+    return `Repo ${profile.slug}: sem script test (gap_no_test_script=${signalIds.has('gap_no_test_script')})`
   }
   if (practice.id === 'ci_workflow') {
     return `Repo ${profile.slug}: sem .github/workflows`
   }
   if (practice.id === 'cursor_rules') {
-    return `Repo ${profile.slug}: agentes Cursor sem .cursor/rules locais`
+    return `Repo ${profile.slug}: sem .cursor/rules`
   }
   return `Gap vs padrão OSS: ${practice.title}`
 }
@@ -77,6 +86,8 @@ function inferAreas(id) {
     drag_drop: ['src/main.js'],
     activity_log: ['src/main.js'],
     automation_rules: ['src/'],
+    app_router: ['app/'],
+    streamlit_tests: ['tests/'],
   }
   return map[id] || ['src/']
 }
@@ -84,12 +95,10 @@ function inferAreas(id) {
 export function toMarkdown(report, profile) {
   const health = report.health
   const lines = [
-    `# Relatório MAX — ${profile.slug}`,
+    `# Relatório Max Stack — ${profile.slug}`,
     '',
     `**Gerado:** ${report.generatedAt}`,
-    `**Análise:** ${report.analysisMode || 'deep'}`,
-    `**Modo:** ${report.mode}`,
-    `**Fase:** ${report.phase}`,
+    `**Análise:** ${report.analysisMode || report.mode || 'deep'}`,
     '',
     '## Health score',
     '',
@@ -97,38 +106,25 @@ export function toMarkdown(report, profile) {
     '',
   ]
   if (health?.categories?.length) {
-    lines.push('### Por categoria', '')
+    lines.push('### Por categoria (12)', '')
     for (const c of health.categories) {
-      lines.push(`- **${c.id}** (${c.weight}pts): ${c.status === 'ok' ? 'ok' : 'gap'}`)
+      lines.push(`- **${c.label || c.id}** (${c.weight}pts): ${c.status === 'ok' ? 'ok' : 'gap'}`)
     }
     lines.push('')
   }
-  lines.push(
-    '## Resumo',
-    '',
-    `- Frameworks: ${(profile.summary?.frameworks || []).join(', ') || '—'}`,
-    `- CI: ${profile.summary?.hasCi ? 'sim' : 'não'}`,
-    `- Testes (sinal): ${profile.summary?.hasTestsSignal ? 'sim' : 'não'}`,
-    `- Cursor rules: ${profile.summary?.hasCursorRules ? 'sim' : 'não'}`,
-    '',
-    '## Recomendações priorizadas',
-    '',
-  )
-  for (const r of report.recommendations) {
-    lines.push(`### [P${r.priority}] ${r.category} — ${r.title}`)
-    lines.push('')
-    lines.push(`**Problema:** ${r.problem}`)
-    lines.push(`**Referência:** ${r.references.map((x) => x.repo).join(', ')}`)
-    lines.push(`**Upgrade:** ${r.suggestedUpgrade}`)
-    lines.push(
-      `**Impacto:** ${r.impact} · **Esforço:** ${r.effort} · **Risco:** ${r.risk}`,
-    )
-    lines.push(`**Áreas:** ${r.affectedAreas.join(', ')}`)
+  if (report.findings?.length) {
+    lines.push('## Achados', '')
+    for (const f of report.findings.slice(0, 15)) {
+      lines.push(`- [${f.findingType}] **${f.title}** (${f.sourceRole}) — ${f.justification}`)
+    }
     lines.push('')
   }
-  lines.push('## Próximo agente')
-  lines.push('')
-  lines.push('**QA Verifier** — validar build/test antes de apply no repo alvo.')
+  lines.push('## Recomendações priorizadas', '')
+  for (const r of report.recommendations || []) {
+    lines.push(`### [P${r.priority}] ${r.category} — ${r.title}`)
+    lines.push(`**Upgrade:** ${r.suggestedUpgrade || r.problem}`)
+    lines.push('')
+  }
   return lines.join('\n')
 }
 
@@ -140,4 +136,10 @@ export function toBacklog(recommendations) {
     tasks: [r.suggestedUpgrade],
     acceptance: [`Evidência: ${r.problem} resolvido`, 'Build verde'],
   }))
+}
+
+export function listCatalogs() {
+  return readdirSync(CATALOG_DIR)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.replace('.json', ''))
 }

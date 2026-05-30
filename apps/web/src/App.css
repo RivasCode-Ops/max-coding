@@ -1,0 +1,159 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, 'Segoe UI', sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.layout {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+header h1 {
+  margin: 0;
+}
+
+header p {
+  color: #94a3b8;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #064e3b;
+  color: #6ee7b7;
+  font-size: 0.85rem;
+}
+
+.card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: #cbd5e1;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0b1220;
+  color: #fff;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #0f766e;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+button.link {
+  background: none;
+  color: #93c5fd;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.cats .gap {
+  color: #f87171;
+}
+
+.cats .ok {
+  color: #4ade80;
+}
+
+.finding {
+  border-left: 3px solid #64748b;
+  padding-left: 10px;
+  margin: 10px 0;
+}
+
+.finding.confirmed {
+  border-color: #ef4444;
+}
+
+.finding.hypothesis {
+  border-color: #f59e0b;
+}
+
+.finding.suggestion {
+  border-color: #3b82f6;
+}
+
+.role {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.rec {
+  margin: 8px 0;
+  padding-left: 8px;
+  border-left: 2px solid #f59e0b;
+}
+
+.busy {
+  color: #fbbf24;
+}
+
+.note {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.history li {
+  padding: 6px 0;
+  border-bottom: 1px solid #1e293b;
+}
+
+a {
+  color: #93c5fd;
+}

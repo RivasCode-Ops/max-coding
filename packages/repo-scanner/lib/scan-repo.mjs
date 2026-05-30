@@ -31,6 +31,28 @@ export function scanRepo(root, slug) {
   if (existsSync(join(root, '.cursor/rules'))) add('has_cursor_rules', '.cursor/rules')
   if (relPaths.some((p) => p === 'README.md')) add('has_readme', 'README.md')
   if (pkg && !pkg.scripts?.test) add('gap_no_test_script', 'package.json sem script test')
+  if (pkg?.scripts?.build) add('has_build_script', 'package.json → scripts.build')
+
+  if (relPaths.some((p) => /dockerfile/i.test(p))) add('has_docker', 'Dockerfile')
+  if (relPaths.some((p) => /docker-compose/i.test(p))) add('has_docker_compose', 'docker-compose')
+  if (relPaths.some((p) => p === 'SECURITY.md')) add('has_security_md', 'SECURITY.md')
+  if (relPaths.some((p) => /^LICENSE/i.test(p))) add('has_license', 'LICENSE')
+  if (relPaths.some((p) => p === 'CONTRIBUTING.md')) add('has_contributing', 'CONTRIBUTING.md')
+  if (relPaths.some((p) => p.includes('dependabot'))) add('has_dependabot', 'dependabot config')
+  if (existsSync(join(root, '.editorconfig'))) add('has_editorconfig', '.editorconfig')
+  if (existsSync(join(root, 'tsconfig.json'))) add('has_typescript', 'tsconfig.json')
+  if (
+    relPaths.some((p) => /eslint.config/i.test(p)) ||
+    existsSync(join(root, '.eslintrc.json')) ||
+    existsSync(join(root, '.eslintrc.cjs'))
+  ) {
+    add('has_eslint', 'eslint config')
+  }
+  if (relPaths.some((p) => /\.prettierrc/i.test(p))) add('has_prettier', 'prettier config')
+  if (relPaths.some((p) => p === '.env.example')) add('has_env_example', '.env.example')
+
+  const langs = detectLanguages(relPaths)
+  if (langs.length) add('languages', langs)
 
   const srcJs = relPaths.filter((p) => p.startsWith('src/') && p.endsWith('.js'))
   const srcText = srcJs.map((p) => readText(join(root, ...p.split('/')))).join('\n')
@@ -155,4 +177,15 @@ function countWorkspacePackages(root, pkg) {
     if (readJson(join(packagesDir, name, 'package.json'))) count += 1
   }
   return count
+}
+
+function detectLanguages(relPaths) {
+  const extMap = { '.ts': 'typescript', '.tsx': 'typescript', '.js': 'javascript', '.py': 'python', '.go': 'go', '.rs': 'rust' }
+  const found = new Set()
+  for (const p of relPaths) {
+    for (const [ext, lang] of Object.entries(extMap)) {
+      if (p.endsWith(ext)) found.add(lang)
+    }
+  }
+  return [...found]
 }

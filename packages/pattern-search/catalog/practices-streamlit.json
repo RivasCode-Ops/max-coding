@@ -1,0 +1,39 @@
+{
+  "stack": "streamlit",
+  "domain": "streamlit-app",
+  "references": [
+    { "repo": "streamlit/streamlit", "url": "https://github.com/streamlit/streamlit", "patterns": ["multipage", "session-state", "caching"] }
+  ],
+  "practices": [
+    {
+      "id": "test_script",
+      "category": "testes",
+      "requiredSignalAbsent": "has_tests_or_validar",
+      "referencePattern": "Apps Streamlit maduros têm pytest",
+      "suggestedUpgrade": "Adicionar pytest + validar.py ou tests/",
+      "impact": "alto",
+      "effort": "medio",
+      "risk": "baixo"
+    },
+    {
+      "id": "ci_workflow",
+      "category": "infraestrutura",
+      "requiredSignalAbsent": "has_ci",
+      "referencePattern": "CI Python com ruff/pytest",
+      "suggestedUpgrade": "GitHub Actions: pip install, pytest, streamlit sanity",
+      "impact": "alto",
+      "effort": "baixo",
+      "risk": "baixo"
+    },
+    {
+      "id": "streamlit_tests",
+      "category": "testes",
+      "requiredSignalAbsent": "has_tests_or_validar",
+      "referencePattern": "Testes de componentes Streamlit",
+      "suggestedUpgrade": "pytest + AppTest (streamlit.testing)",
+      "impact": "medio",
+      "effort": "medio",
+      "risk": "baixo"
+    }
+  ]
+}

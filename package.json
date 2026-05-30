@@ -1,19 +1,23 @@
 {
   "name": "max-coding",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "MAX — auditor técnico evolutivo de repositórios",
+  "description": "Max Stack — auditoria evolutiva local-first de repositórios",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/web"
   ],
   "scripts": {
     "scan": "node packages/repo-scanner/bin/scan.mjs",
     "quick": "node packages/core/bin/run-quick.mjs",
     "deep": "node packages/core/bin/run-audit.mjs",
     "audit": "node packages/core/bin/run-audit.mjs",
+    "build:web": "npm run build --workspace=@max-stack/web",
+    "prestart": "npm run build:web",
     "start": "node packages/api/bin/serve.mjs",
-    "dev": "node packages/api/bin/serve.mjs",
+    "dev:web": "npm run dev --workspace=@max-stack/web",
+    "dev:api": "node packages/api/bin/serve.mjs",
     "validar": "node validar.mjs",
     "test": "node --test tests/**/*.test.mjs"
   }

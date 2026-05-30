@@ -1,77 +1,44 @@
-# MAX
+# Max Stack
 
-**MAX** é um auditor técnico evolutivo de repositórios que detecta padrões, encontra lacunas e sugere melhorias contínuas para aumentar qualidade, segurança, performance e maturidade do software.
+**Max Stack** é um sistema local-first de auditoria, análise estrutural e evolução contínua de repositórios.
 
 Repositório: [RivasCode-Ops/max-coding](https://github.com/RivasCode-Ops/max-coding)
 
-MAX lê repositórios locais (GitHub remoto na V1.5), entende a stack, identifica padrões internos e externos, compara com referências do ecossistema e gera diagnósticos acionáveis com prioridade, evidência e impacto.
-
-## Missão
-
-Transformar repositórios em **diagnósticos acionáveis** e **planos de melhoria contínua**.
-
-## Modos de análise
-
-| Modo | Comando | Saída |
-|------|---------|-------|
-| **Quick Scan** | `npm run quick -- <path>` | Health score + SQLite |
-| **Deep Analysis** | `npm run deep -- <path>` | Quick + recomendações + backlog |
-| **UI local** | `npm start` | http://localhost:3847 |
-| **Validar tudo** | `npm run validar` | Testes + self-scan + SQLite |
+## Uso rápido
 
 ```bash
-npm start                                    # UI + API local
-npm run validar                              # checagem completa (sem Cursor)
-npm run quick -- c:\_PROJETOS\Quadro-Negro
+npm install
+npm run validar                              # checagem completa
+npm start                                    # http://localhost:3847 (React UI)
+npm run quick -- c:\_PROJETOS\Meu-Repo
+npm run quick -- https://github.com/org/repo
 npm run deep -- c:\_PROJETOS\Quadro-Negro
 ```
 
-Histórico persistente em `data/max.db`. Relatórios em `reports/<slug>/` (gitignored).
+## V1 PRD — status
 
-## Health score
+| Requisito | Status |
+|-----------|--------|
+| Repo local + URL GitHub | ✅ clone em `data/repos/` |
+| 12 categorias de saúde | ✅ |
+| Achados tipados + evidência | ✅ confirmed / hypothesis / suggestion |
+| 7 papéis (determinísticos) | ✅ pipeline por módulo |
+| Padrões externos | ✅ catálogos vite / next / streamlit / node |
+| SQLite normalizado | ✅ 9 entidades |
+| UI React + TypeScript | ✅ `apps/web` |
+| Backlog + checklist + PR plan | ✅ |
+| GitHub App / PR comments | ❌ Fase 3 |
 
-Pontuação 0–100 por categorias: testes, CI/CD, DX, estrutura, documentação, stack, dependências e scripts. Grades A–D.
+Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 
-## Arquitetura (monorepo)
+## Arquitetura
 
-| Pacote | Papel |
-|--------|-------|
-| `packages/repo-scanner` | **Repo Scout** — perfil do repositório |
-| `packages/pattern-search` | **Pattern Hunter** — catálogo de práticas OSS |
-| `packages/recommender` | **Auditors + Patch Planner** — recomendações |
-| `packages/core` | **Orchestrator** — Quick Scan e Deep Analysis |
-| `apps/web` | UI React+TS (V2 — placeholder) |
+`intake` → `scan-repo` → `pipeline` (papéis) → `findings` → SQLite + relatórios
 
-## Papéis internos (gstack-inspired)
+## Dev
 
-Orchestrator · Repo Scout · Pattern Hunter · Architecture Auditor · Security Auditor · Performance Reviewer · Patch Planner · QA Verifier
-
-Ver [docs/gstack-mapping.md](./docs/gstack-mapping.md).
-
-## Documentação
-
-- [docs/COPY-PRODUTO.md](./docs/COPY-PRODUTO.md) — copy oficial e status V1
-- [docs/prd.md](./docs/prd.md) — PRD
-- [docs/data-model.md](./docs/data-model.md) — schema SQLite (V1.5)
-- [docs/agents/](./docs/agents/) — prompts por papel
-
-## Regras
-
-- Não inventar problemas sem evidência (arquivo/sinal observável)
-- Separar risco confirmado · hipótese · melhoria sugerida
-- Modo **audit** (default): só relatório — não editar repo alvo sem autorização
-
-## Status V1.5
-
-- Quick Scan e Deep Analysis via CLI **ou UI local** (`npm start`)
-- SQLite local (`data/max.db`) — histórico sem Cursor
-- `npm run validar` — testa tudo de uma vez
-- Health score por categorias
-- Handoff multi-agente (`handoff.json`)
-
-## Inspirações (não dependências)
-
-- [gstack](https://github.com/garrytan/gstack) — papéis especializados
-- [ECC Tools](https://ecc.tools/platforms) — guardrails portáveis
-- RepoAnalyzer / Repo Doctor — health score e categorias
-- [Guardrails](https://github.com/apps/guardrails) — qualidade contínua
+```bash
+npm run dev:api          # API :3847
+npm run dev:web          # Vite :5174 (proxy /api)
+npm test
+```

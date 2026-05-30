@@ -9,7 +9,7 @@ if (!target) {
 
 try {
   const result = analyzeRepository(target, { mode: 'quick' })
-  console.log(`[MAX] Quick Scan — ${result.repo.slug}`)
+  console.log(`[Max Stack] Quick Scan — ${result.repo.slug}`)
   console.log(`Health: ${result.health.summary}`)
   if (result.analysisId) console.log(`SQLite: analysis #${result.analysisId}`)
 } catch (err) {

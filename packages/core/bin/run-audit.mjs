@@ -12,7 +12,7 @@ if (!target) {
 
 try {
   const result = analyzeRepository(target, { mode: 'deep', auditMode })
-  console.log(`[MAX Orchestrator] Deep Analysis — ${result.repo.slug} (mode=${auditMode})`)
+  console.log(`[Max Stack] Deep Analysis — ${result.repo.slug} (mode=${auditMode})`)
   console.log(`[Repo Scout] health score: ${result.health.summary}`)
   console.log(`[Patch Planner] ${result.recommendations.length} recomendações`)
   if (result.analysisId) console.log(`SQLite: analysis #${result.analysisId}`)
