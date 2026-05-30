@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status, SuggestActionResult } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -99,5 +99,25 @@ export function suggestAction(path: string, request: string, analysisId?: number
   return api<SuggestActionResult>('/api/suggest-action', {
     method: 'POST',
     body: JSON.stringify({ path, request, analysisId }),
+  })
+}
+
+export function listCursorTasks(path: string) {
+  return api<{ slug: string; tasks: CursorTaskFile[]; records: unknown[] }>(
+    `/api/cursor/tasks?path=${encodeURIComponent(path)}`,
+  )
+}
+
+export function cursorApplyBatch(path: string, analysisId?: number, maxPriority = 2) {
+  return api<{ count: number; applied: CursorApplyResult[] }>('/api/cursor/apply-batch', {
+    method: 'POST',
+    body: JSON.stringify({ path, analysisId, maxPriority }),
+  })
+}
+
+export function verifyImplementation(path: string, analysisId?: number, validateRepo = true) {
+  return api<VerificationReport>('/api/verify', {
+    method: 'POST',
+    body: JSON.stringify({ path, analysisId, validateRepo }),
   })
 }

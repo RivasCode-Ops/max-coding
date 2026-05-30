@@ -27,6 +27,25 @@ export type CursorApplyResult = {
   cursorHint: string
 }
 
+export type CursorTaskFile = {
+  filename: string
+  relative: string
+  title: string
+  modifiedAt: string
+  cursorHint: string
+}
+
+export type VerificationReport = {
+  verdict: 'APPROVED' | 'STABLE' | 'ATTENTION' | 'FAILED'
+  summary: string
+  before: { health?: { summary: string; overall: number }; analysisId?: number | null }
+  after: { health?: { summary: string; overall: number }; analysisId?: number }
+  diff?: AnalysisResult['scanDiff']
+  validation?: AnalysisResult['repoValidation']
+  tasks: CursorTaskFile[]
+  checklist: { id: string; label: string; ok: boolean; detail: string }[]
+}
+
 export type HealthTrendPoint = {
   health_overall: number
   health_grade?: string

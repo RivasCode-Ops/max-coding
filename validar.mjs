@@ -150,6 +150,20 @@ await step('Cursor apply + suggest action (Fase 8)', async () => {
   ok(`cursor apply + ${sug.suggestions.length} sugestões`)
 })
 
+await step('Verify loop + tasks (Fase 9)', async () => {
+  const { buildVerificationReport } = await import('./packages/core/lib/verify-apply.mjs')
+  const { listCursorTasks } = await import('./packages/core/lib/task-registry.mjs')
+  const report = buildVerificationReport(
+    { health: { overall: 88, summary: '88/100' }, findings: [] },
+    { health: { overall: 88, summary: '88/100' }, findings: [] },
+    { ok: true, skipped: true, results: [] },
+    [],
+  )
+  if (!report.verdict) throw new Error('verdict ausente')
+  const tasks = listCursorTasks(ROOT)
+  ok(`verify ${report.verdict} · ${tasks.length} tasks no self-scan`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

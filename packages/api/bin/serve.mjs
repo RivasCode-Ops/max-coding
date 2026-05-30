@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.10.0',
+      version: '0.11.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -257,7 +257,21 @@ async function handle(req, res) {
     }
 
     const { applyRecommendationViaCursor } = await import('../../core/lib/cursor-apply.mjs')
+    const { saveCursorTaskRecord } = await import('../../core/lib/task-registry.mjs')
     const applied = applyRecommendationViaCursor(analysisResult, recommendationId)
+
+    if (applied.written && analysisResult.repo?.slug) {
+      saveCursorTaskRecord(getDb(), {
+        repoSlug: analysisResult.repo.slug,
+        repoPath: analysisResult.repo.path,
+        taskId: recommendationId,
+        recommendationId,
+        title: applied.title,
+        relativePath: applied.written.relative,
+        pilotFix: applied.pilotFix,
+        status: 'pending',
+      })
+    }
 
     let pilotResult = null
     if (autoPilot && applied.pilotFix && analysisResult.repo?.path) {
@@ -302,6 +316,68 @@ async function handle(req, res) {
     }
 
     return sendJson(res, 200, result)
+  }
+
+  if (path === '/api/cursor/tasks' && req.method === 'GET') {
+    const repoPath = url.searchParams.get('path')
+    if (!repoPath) return sendJson(res, 400, { error: 'path obrigatório' })
+    const abs = resolve(repoPath)
+    const slug = basename(abs)
+    const { listCursorTasks, listCursorTaskRecords } = await import('../../core/lib/task-registry.mjs')
+    const files = listCursorTasks(abs)
+    const records = listCursorTaskRecords(getDb(), slug)
+    return sendJson(res, 200, { slug, tasks: files, records })
+  }
+
+  if (path === '/api/cursor/apply-batch' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, analysisId, maxPriority = 2 } = body
+    let analysisResult = null
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+      analysisResult = row.data
+      analysisResult.repo = analysisResult.repo || { path: row.path, slug: row.slug }
+    } else if (repoPath) {
+      analysisResult = await analyzeRepository(resolve(repoPath), {
+        mode: 'quick',
+        writeReports: false,
+        persistSqlite: false,
+      })
+    } else {
+      return sendJson(res, 400, { error: 'Informe path ou analysisId' })
+    }
+
+    const { applyBatchRecommendations } = await import('../../core/lib/cursor-apply.mjs')
+    const { saveCursorTaskRecord } = await import('../../core/lib/task-registry.mjs')
+    const applied = applyBatchRecommendations(analysisResult, { maxPriority })
+    for (const a of applied) {
+      if (a.written && analysisResult.repo?.slug) {
+        saveCursorTaskRecord(getDb(), {
+          repoSlug: analysisResult.repo.slug,
+          repoPath: analysisResult.repo.path,
+          taskId: a.recommendationId,
+          recommendationId: a.recommendationId,
+          title: a.title,
+          relativePath: a.written.relative,
+          pilotFix: a.pilotFix,
+          status: 'pending',
+        })
+      }
+    }
+    return sendJson(res, 200, { count: applied.length, applied })
+  }
+
+  if (path === '/api/verify' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, analysisId, validateRepo = true } = body
+    if (!repoPath) return sendJson(res, 400, { error: 'path obrigatório' })
+    const { verifyImplementation } = await import('../../core/lib/verify-apply.mjs')
+    const report = await verifyImplementation(resolve(repoPath), {
+      baselineAnalysisId: analysisId,
+      validateRepo: Boolean(validateRepo),
+    })
+    return sendJson(res, 200, report)
   }
 
   if (path === '/api/analyze' && req.method === 'POST') {

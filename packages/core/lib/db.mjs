@@ -136,6 +136,22 @@ function migrate(db) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_feedback_rec ON recommendation_feedback(recommendation_id);
+
+    CREATE TABLE IF NOT EXISTS cursor_tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      repo_slug TEXT NOT NULL,
+      repo_path TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      recommendation_id TEXT,
+      title TEXT,
+      relative_path TEXT,
+      status TEXT DEFAULT 'pending',
+      pilot_fix TEXT,
+      created_at TEXT NOT NULL,
+      verified_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_cursor_tasks_slug ON cursor_tasks(repo_slug);
   `)
 
   try {

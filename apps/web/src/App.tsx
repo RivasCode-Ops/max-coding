@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, cursorApply, getAnalysis, getAnalysisFeedback, getPortfolio, getStatus, getTrend, installHook, listHistory, postPrComment, sendFeedback, suggestAction, validateRepo } from './api'
-import type { ActionSuggestion, AnalysisResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary } from './types'
+import { analyze, applyPilot, applyRules, cursorApply, cursorApplyBatch, getAnalysis, getAnalysisFeedback, getPortfolio, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, VerificationReport } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import './App.css'
 
@@ -25,6 +25,8 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<ActionSuggestion[] | null>(null)
   const [suggestNote, setSuggestNote] = useState<string | null>(null)
   const [cursorMsg, setCursorMsg] = useState<string | null>(null)
+  const [cursorTasks, setCursorTasks] = useState<CursorTaskFile[]>([])
+  const [verifyReport, setVerifyReport] = useState<VerificationReport | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -32,6 +34,15 @@ export default function App() {
       setRecFeedback(fb.stats)
     } catch {
       setRecFeedback({})
+    }
+  }
+
+  async function loadCursorTasks(path: string) {
+    try {
+      const r = await listCursorTasks(path)
+      setCursorTasks(r.tasks)
+    } catch {
+      setCursorTasks([])
     }
   }
 
@@ -73,6 +84,7 @@ export default function App() {
       const data = { ...res.data, analysisId: res.data.analysisId ?? res.id }
       setResult(data)
       if (data.analysisId) await loadRecFeedback(data.analysisId)
+      if (data.repo?.path) await loadCursorTasks(data.repo.path)
       if (data.repo?.slug) {
         try {
           setTrend(await getTrend(data.repo.slug))
@@ -227,12 +239,48 @@ export default function App() {
     await runCursorApply(s.id, autoPilot || Boolean(s.pilotFix && s.kind === 'pilot'))
   }
 
+  async function runApplyBatch() {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return
+    setBusy(true)
+    try {
+      const r = await cursorApplyBatch(path, result?.analysisId, 2)
+      await loadCursorTasks(path)
+      alert(`${r.count} task(s) P1/P2 criadas em .cursor/max-stack/tasks/`)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runVerify() {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return
+    setBusy(true)
+    setVerifyReport(null)
+    try {
+      const report = await verifyImplementation(path, result?.analysisId)
+      setVerifyReport(report)
+      setResult((prev) => (prev ? { ...prev, health: report.after.health as AnalysisResult['health'] } : prev))
+      await loadCursorTasks(path)
+      await refresh()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function load(id: number) {
     const row = await getAnalysis(id)
     const data = { ...row.data, analysisId: id }
     setResult(data)
     if (id) await loadRecFeedback(id)
-    if (row.data?.repo?.path) setRepoPath(row.data.repo.path)
+    if (row.data?.repo?.path) {
+      setRepoPath(row.data.repo.path)
+      await loadCursorTasks(row.data.repo.path)
+    }
     if (row.slug) {
       try {
         setTrend(await getTrend(row.slug))
@@ -597,6 +645,26 @@ export default function App() {
 
           <section className="card">
             <h2>Recomendações ({result.recommendations?.length || 0})</h2>
+            <div className="row">
+              <button type="button" className="tiny cursor-btn" disabled={busy} onClick={runApplyBatch}>
+                Aplicar todas P1/P2 no Cursor
+              </button>
+              <button type="button" className="tiny secondary" disabled={busy} onClick={runVerify}>
+                Verificar implementação
+              </button>
+            </div>
+            {verifyReport && (
+              <div className={`verify-box verdict-${verifyReport.verdict.toLowerCase()}`}>
+                <strong>{verifyReport.verdict}</strong> — {verifyReport.summary}
+                <ul>
+                  {verifyReport.checklist.map((c) => (
+                    <li key={c.id} className={c.ok ? 'ok' : 'fail'}>
+                      {c.label}: {c.detail}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {result.recommendations?.map((r) => (
               <article key={r.id} className="rec">
                 <strong>
@@ -635,6 +703,33 @@ export default function App() {
               </article>
             ))}
           </section>
+
+          {cursorTasks.length > 0 && (
+            <section className="card">
+              <h2>Tasks Cursor ({cursorTasks.length})</h2>
+              <p className="note">Arquivos em .cursor/max-stack/tasks/ — referencie no Agent com @arquivo</p>
+              <ul className="suggestions">
+                {cursorTasks.map((t) => (
+                  <li key={t.filename} className="suggestion-item">
+                    <strong>{t.title}</strong>
+                    <small className="note">{t.relative} · {new Date(t.modifiedAt).toLocaleString('pt-BR')}</small>
+                    <div className="row feedback-row">
+                      <button
+                        type="button"
+                        className="tiny secondary"
+                        onClick={() => {
+                          navigator.clipboard.writeText(t.cursorHint)
+                          alert('Referência copiada!')
+                        }}
+                      >
+                        Copiar @{t.filename}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="card">
             <h2>Backlog</h2>

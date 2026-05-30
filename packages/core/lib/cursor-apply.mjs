@@ -134,3 +134,9 @@ export function applyRecommendationViaCursor(analysisResult, recommendationId, o
       : 'Cole o prompt no Cursor Agent (Ctrl+I)',
   }
 }
+
+export function applyBatchRecommendations(analysisResult, options = {}) {
+  const maxPriority = options.maxPriority ?? 2
+  const recs = (analysisResult.recommendations || []).filter((r) => (r.priority ?? 3) <= maxPriority)
+  return recs.map((r) => applyRecommendationViaCursor(analysisResult, r.id, options))
+}

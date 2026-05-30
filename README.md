@@ -17,11 +17,12 @@ npm run validate-repo -- c:\_PROJETOS\Meu-Repo
 npm run portfolio -- c:\_PROJETOS
 npm run pr-comment -- RivasCode-Ops/Quadro-Negro 1   # comentário em PR (GitHub)
 npm run apply-pilot -- c:\_PROJETOS\Quadro-Negro  # aplicar P1/P2
+npm run verify -- c:\_PROJETOS\Quadro-Negro       # verificar pós-implementação
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.10)
+## V1 PRD — status (v0.11)
 
 | Requisito | Status |
 |-----------|--------|
@@ -42,6 +43,7 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 6 polish** | ✅ trend SVG, feedback stats, watch mode |
 | **Fase 7 piloto** | ✅ apply-pilot P1/P2, Quadro-Negro 97/100 |
 | **Fase 8 Cursor** | ✅ aplicar recomendações + busca por ação na UI |
+| **Fase 9 Verify** | ✅ verificar implementação, tasks registry, apply batch P1/P2 |
 
 ### Fase 3 (local-first)
 
@@ -92,6 +94,15 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Aplicar recomendação no Cursor | Botão na UI · `POST /api/cursor/apply` |
 | Buscar melhor opção por ação | Campo na UI · `POST /api/suggest-action` |
 | Tasks em `.cursor/max-stack/tasks/` | Prompt pronto para `@arquivo` no Agent |
+
+### Fase 9 (Verify loop)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Verificar pós-implementação | `npm run verify -- <path>` · `POST /api/verify` |
+| Listar tasks Cursor | `GET /api/cursor/tasks?path=` |
+| Aplicar batch P1/P2 | Botão na UI · `POST /api/cursor/apply-batch` |
+| Registro SQLite `cursor_tasks` | Histórico de applies + verdict QA |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

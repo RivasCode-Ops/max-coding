@@ -80,6 +80,18 @@
 - `npm run apply-pilot` + API/UI
 - Quadro-Negro: modularização `board-ui.js` + health **97/100**
 
+### Bloco J — Fase 8 Cursor (v0.10) ✅
+
+- `cursor-apply.mjs` — prompts + tasks `.cursor/max-stack/tasks/`
+- `action-suggester.mjs` — busca por ação do usuário
+- UI botão **Aplicar no Cursor** + campo **O que você quer fazer?**
+
+### Bloco K — Fase 9 Verify (v0.11) ✅
+
+- `verify-apply.mjs` — re-scan + validate-repo + verdict QA
+- `task-registry.mjs` — listagem tasks + SQLite `cursor_tasks`
+- `apply-batch` P1/P2 · UI **Verificar implementação**
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -93,3 +105,5 @@
 - [x] Fase 5 cloud (GitHub App, PR comments, webhook)
 - [x] Fase 6 polish (trend chart, feedback stats, watch)
 - [x] Fase 7 piloto (apply-pilot, Quadro-Negro 97/100)
+- [x] Fase 8 Cursor (apply + suggest-action)
+- [x] Fase 9 Verify (QA loop + batch + task registry)

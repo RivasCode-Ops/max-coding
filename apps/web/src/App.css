@@ -289,3 +289,30 @@ button.cursor-btn {
   font-size: 0.85rem;
   white-space: pre-wrap;
 }
+
+.verify-box {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.verify-box.verdict-approved {
+  background: #052e16;
+  border: 1px solid #16a34a;
+}
+
+.verify-box.verdict-stable {
+  background: #1e3a5f;
+  border: 1px solid #3b82f6;
+}
+
+.verify-box.verdict-attention {
+  background: #422006;
+  border: 1px solid #f59e0b;
+}
+
+.verify-box.verdict-failed {
+  background: #450a0a;
+  border: 1px solid #ef4444;
+}
