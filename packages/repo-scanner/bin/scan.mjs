@@ -36,22 +36,44 @@ function scanRepo(root, slug) {
   const signals = []
   const add = (id, evidence) => signals.push({ id, evidence })
 
+  const workspacePkgCount = countWorkspacePackages(root, pkg)
+  if (workspacePkgCount > 0) add('has_workspace_packages', `${workspacePkgCount} packages`)
+  if (pkg?.workspaces?.length) add('stack_node_monorepo', 'package.json → workspaces')
   if (pkg?.dependencies?.vite || pkg?.devDependencies?.vite) add('stack_vite', 'package.json → vite')
   if (pkg?.dependencies?.react || pkg?.devDependencies?.react) add('stack_react', 'package.json → react')
   if (pkg?.dependencies?.next || pkg?.devDependencies?.next) add('stack_next', 'package.json → next')
   if (hasStreamlit) add('stack_streamlit', 'app.py + requirements.txt')
   if (existsSync(join(root, 'src'))) add('structure_src', 'src/')
+  if (existsSync(join(root, 'packages'))) add('structure_packages', 'packages/')
   if (relPaths.some((p) => /test|spec|validar/i.test(p))) add('has_tests_or_validar', relPaths.filter((p) => /test|validar/i.test(p)).slice(0, 5))
   if (relPaths.some((p) => p.startsWith('.github/workflows'))) add('has_ci', '.github/workflows')
   if (existsSync(join(root, '.cursor/rules'))) add('has_cursor_rules', '.cursor/rules')
   if (relPaths.some((p) => p === 'README.md')) add('has_readme', 'README.md')
   if (pkg && !pkg.scripts?.test) add('gap_no_test_script', 'package.json sem script test')
 
+  const srcJs = relPaths.filter((p) => p.startsWith('src/') && p.endsWith('.js'))
+  const srcText = srcJs.map((p) => readText(join(root, ...p.split('/')))).join('\n')
+  if (/draggable|dragstart|drop-zone|dataTransfer/i.test(srcText)) {
+    add('has_drag_drop', srcJs.filter((p) => /main|board/i.test(p)).slice(0, 3))
+  }
+  if (/appendActivity|activity\[\]|has_activity/i.test(srcText)) {
+    add('has_activity_log', srcJs.filter((p) => p.includes('board')).slice(0, 2))
+  }
+  if (/applyDoneAutomation|automation|IFTTT/i.test(srcText)) {
+    add('has_automation_rules', srcJs.filter((p) => p.includes('board')).slice(0, 2))
+  }
+
   const frameworks = []
   if (signals.some((s) => s.id === 'stack_vite')) frameworks.push('vite')
   if (signals.some((s) => s.id === 'stack_react')) frameworks.push('react')
   if (signals.some((s) => s.id === 'stack_next')) frameworks.push('next')
   if (signals.some((s) => s.id === 'stack_streamlit')) frameworks.push('streamlit')
+  if (signals.some((s) => s.id === 'stack_node_monorepo')) frameworks.push('node-monorepo')
+
+  const workspaceDeps = collectWorkspaceDeps(root, pkg)
+  const rootDeps = Object.keys(pkg?.dependencies || {})
+  const rootDevDeps = Object.keys(pkg?.devDependencies || {})
+  const allDeps = [...new Set([...rootDeps, ...rootDevDeps, ...workspaceDeps])]
 
   return {
     slug,
@@ -68,8 +90,10 @@ function scanRepo(root, slug) {
     stack: {
       packageManager: existsSync(join(root, 'pnpm-lock.yaml')) ? 'pnpm' : existsSync(join(root, 'package-lock.json')) ? 'npm' : null,
       scripts: pkg?.scripts || {},
-      dependencies: Object.keys(pkg?.dependencies || {}),
-      devDependencies: Object.keys(pkg?.devDependencies || {}),
+      dependencies: rootDeps,
+      devDependencies: rootDevDeps,
+      workspaceDependencies: workspaceDeps,
+      allDependencies: allDeps,
     },
     python: pyReq ? { requirements: readLines(join(root, 'requirements.txt')).slice(0, 20) } : null,
     signals,
@@ -110,4 +134,38 @@ function readLines(path) {
   } catch {
     return []
   }
+}
+
+function readText(path) {
+  try {
+    return readFileSync(path, 'utf8')
+  } catch {
+    return ''
+  }
+}
+
+function collectWorkspaceDeps(root, pkg) {
+  const out = new Set()
+  const patterns = pkg?.workspaces
+  if (!patterns?.length) return []
+  const packagesDir = join(root, 'packages')
+  if (!existsSync(packagesDir)) return []
+  for (const name of readdirSync(packagesDir)) {
+    const childPkg = readJson(join(packagesDir, name, 'package.json'))
+    if (!childPkg) continue
+    for (const k of Object.keys(childPkg.dependencies || {})) out.add(k)
+    for (const k of Object.keys(childPkg.devDependencies || {})) out.add(k)
+  }
+  return [...out]
+}
+
+function countWorkspacePackages(root, pkg) {
+  if (!pkg?.workspaces?.length) return 0
+  const packagesDir = join(root, 'packages')
+  if (!existsSync(packagesDir)) return 0
+  let count = 0
+  for (const name of readdirSync(packagesDir)) {
+    if (readJson(join(packagesDir, name, 'package.json'))) count += 1
+  }
+  return count
 }

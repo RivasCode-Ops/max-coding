@@ -11,6 +11,7 @@
     "scan": "node packages/repo-scanner/bin/scan.mjs",
     "quick": "node packages/core/bin/run-quick.mjs",
     "deep": "node packages/core/bin/run-audit.mjs",
-    "audit": "node packages/core/bin/run-audit.mjs"
+    "audit": "node packages/core/bin/run-audit.mjs",
+    "test": "node --test tests/**/*.test.mjs"
   }
 }
