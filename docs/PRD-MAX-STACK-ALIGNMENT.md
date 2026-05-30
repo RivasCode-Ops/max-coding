@@ -160,6 +160,12 @@
 - `npm run portfolio-heatmap` · `GET /api/portfolio/heatmap` · SVG opcional
 - UI tabela colorida **Heatmap de categorias**
 
+### Bloco W — Fase 21 Quality (v0.23) ✅
+
+- `quality-signals.mjs` — checklist testes, CI, docs, DX, segurança
+- `npm run quality-signals` · `GET /api/quality-signals`
+- UI **Sinais de qualidade** + inclusão no relatório exportado
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -186,3 +192,4 @@
 - [x] Fase 18 History (histórico multi-repo + sparklines na UI)
 - [x] Fase 19 Digest (relatório executivo do portfolio)
 - [x] Fase 20 Heatmap (12 categorias × repos no portfolio)
+- [x] Fase 21 Quality (sinais de qualidade explícitos)

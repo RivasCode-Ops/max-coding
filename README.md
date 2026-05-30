@@ -27,11 +27,12 @@ npm run watch-portfolio -- c:\_PROJETOS 1800   # re-scan repos com alertas
 npm run portfolio-history -- c:\_PROJETOS      # tendências de health no portfolio
 npm run portfolio-digest -- c:\_PROJETOS       # relatório executivo do portfolio
 npm run portfolio-heatmap -- c:\_PROJETOS 8    # heatmap 12 categorias × repos
+npm run quality-signals -- c:\_PROJETOS\Meu-Repo # checklist testes, CI, docs, DX
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.22)
+## V1 PRD — status (v0.23)
 
 | Requisito | Status |
 |-----------|--------|
@@ -212,6 +213,14 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Matriz categorias × repos | `npm run portfolio-heatmap -- [root] [max]` |
 | API + SVG | `GET /api/portfolio/heatmap` · `?format=svg` |
 | UI | Tabela **Heatmap de categorias** no portfolio |
+
+### Fase 21 (quality signals)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Checklist de qualidade | `npm run quality-signals -- <path>` |
+| Por análise | campo `qualitySignals` no scan · `GET /api/quality-signals?path=` |
+| UI + relatório | Painel **Sinais de qualidade** · exportar relatório |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

@@ -272,6 +272,15 @@ await step('Portfolio heatmap (Fase 20)', async () => {
   ok(`${heatmap.summary.repoCount} repos · fraco: ${heatmap.summary.weakestCategories[0]?.label || '—'}`)
 })
 
+await step('Quality signals (Fase 21)', async () => {
+  const { buildQualitySignals } = await import('./packages/core/lib/quality-signals.mjs')
+  const { scanRepo } = await import('./packages/repo-scanner/lib/scan-repo.mjs')
+  const profile = scanRepo(ROOT, 'max-coding')
+  const q = buildQualitySignals(profile)
+  if (!q.checks.length || q.summary.total < 10) throw new Error('quality signals incompleto')
+  ok(`${q.summary.passed}/${q.summary.total} sinais (${q.summary.pct}%)`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

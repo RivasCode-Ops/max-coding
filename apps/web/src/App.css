@@ -653,3 +653,31 @@ tr.portfolio-active td {
   color: #0f172a;
   font-weight: 600;
 }
+
+.quality-signals-wrap {
+  margin: 8px 0;
+}
+
+.quality-groups {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.quality-checks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  columns: 2;
+  font-size: 0.85rem;
+}
+
+.quality-checks li.ok {
+  color: #4ade80;
+}
+
+.quality-checks li.gap {
+  color: #f87171;
+}

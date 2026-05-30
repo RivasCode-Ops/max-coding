@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.22.0',
+      version: '0.23.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -381,6 +381,20 @@ async function handle(req, res) {
     }
     const saved = saveFeedback(getDb(), { recommendationId, analysisId, useful })
     return sendJson(res, 200, saved)
+  }
+
+  if (path === '/api/quality-signals' && req.method === 'GET') {
+    const repoPath = url.searchParams.get('path')
+    if (!repoPath) return sendJson(res, 400, { error: 'path obrigatório' })
+    const abs = resolve(repoPath)
+    const slug = basename(abs).toLowerCase().replace(/\s+/g, '-')
+    const profile = scanRepo(abs, slug)
+    const { buildQualitySignals, formatQualitySignalsMarkdown } = await import('../../core/lib/quality-signals.mjs')
+    const quality = buildQualitySignals(profile)
+    if (url.searchParams.get('format') === 'md') {
+      return sendJson(res, 200, { slug, markdown: formatQualitySignalsMarkdown(quality) })
+    }
+    return sendJson(res, 200, { slug, quality })
   }
 
   if (path === '/api/validate-repo' && req.method === 'POST') {

@@ -5,6 +5,7 @@ import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
 import PortfolioHistoryPanel from './PortfolioHistoryPanel'
 import PortfolioHeatmapPanel from './PortfolioHeatmap'
+import QualitySignalsPanel from './QualitySignalsPanel'
 import './App.css'
 
 export default function App() {
@@ -1012,6 +1013,13 @@ export default function App() {
               </ul>
             )}
           </section>
+
+          {result.qualitySignals && (
+            <section className="card">
+              <h2>Sinais de qualidade</h2>
+              <QualitySignalsPanel quality={result.qualitySignals} />
+            </section>
+          )}
 
           <section className="card">
             <h2>Health por categoria (12)</h2>

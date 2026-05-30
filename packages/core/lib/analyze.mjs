@@ -19,6 +19,7 @@ import { applyCursorRules } from './apply-rules.mjs'
 import { dedupeFindings, findingsToRecommendations } from './findings.mjs'
 import { analyzeGitHistory } from './git-analyzer.mjs'
 import { generateIssuesMarkdown } from './issues-export.mjs'
+import { buildQualitySignals } from './quality-signals.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
 
@@ -115,6 +116,7 @@ export async function analyzeRepository(input, options = {}) {
     runs: pipeline.runs,
     verification: pipeline.verification,
     signals: (profile.signals || []).map((s) => s.id),
+    qualitySignals: buildQualitySignals(profile),
     summary: profile.summary,
     reportMarkdown: '',
   }

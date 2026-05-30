@@ -239,6 +239,19 @@ export type RepoContext = {
   profileSummary?: { frameworks?: string[]; hasCi?: boolean }
 }
 
+export type QualitySignalCheck = {
+  id: string
+  group: string
+  label: string
+  ok: boolean
+}
+
+export type QualitySignals = {
+  checks: QualitySignalCheck[]
+  groups: { id: string; label: string; passed: number; total: number; pct: number }[]
+  summary: { passed: number; total: number; pct: number }
+}
+
 export type AnalysisResult = {
   analysisId?: number
   mode: string
@@ -287,6 +300,7 @@ export type AnalysisResult = {
       daysSinceLastCommit: number | null
     }
   }
+  qualitySignals?: QualitySignals
 }
 
 export type PortfolioItem = {

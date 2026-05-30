@@ -25,7 +25,7 @@ Para: *“aqui está o estado, os padrões, os riscos, as melhorias prioritária
 | 1 | Ler repo local | ✅ `npm run scan` / `audit` |
 | 2 | Detectar stack | ✅ Repo Scout |
 | 3 | Mapear estrutura | ✅ profile.json |
-| 4 | Sinais de qualidade (testes, CI, docs, DX) | ✅ parcial |
+| 4 | Sinais de qualidade (testes, CI, docs, DX) | ✅ Fase 21 |
 | 5 | Detectar gaps prováveis | ✅ recommender |
 | 6 | Padrões externos (catálogo OSS) | ✅ Pattern Hunter |
 | 7 | Comparar vs referências | ✅ |

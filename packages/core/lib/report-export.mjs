@@ -4,6 +4,7 @@
 import { toMarkdown } from '../../recommender/lib/recommend.mjs'
 import { suggestNextActions } from './repo-context.mjs'
 import { generateIssuesMarkdown } from './issues-export.mjs'
+import { formatQualitySignalsMarkdown } from './quality-signals.mjs'
 
 export function generateExecutiveReport(result, options = {}) {
   const profile = result.profile || { slug: result.repo?.slug || 'repo' }
@@ -40,6 +41,10 @@ export function generateExecutiveReport(result, options = {}) {
       sections.push(`- **${a.title}** — ${a.detail}`)
     }
     sections.push('')
+  }
+
+  if (result.qualitySignals?.checks?.length) {
+    sections.push(formatQualitySignalsMarkdown(result.qualitySignals))
   }
 
   if (result.checklist?.length) {
