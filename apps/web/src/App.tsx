@@ -8,6 +8,23 @@ import PortfolioHeatmapPanel from './PortfolioHeatmap'
 import QualitySignalsPanel from './QualitySignalsPanel'
 import './App.css'
 
+const EMPTY_PORTFOLIO_SUMMARY: PortfolioSummary = {
+  total: 0,
+  withHealth: 0,
+  averageHealth: 0,
+  top: [],
+  needsAttention: [],
+}
+
+function summarizeAlerts(alerts: PortfolioAlert[]): PortfolioAlertsSummary {
+  return {
+    critical: alerts.filter((a) => a.level === 'critical').length,
+    warning: alerts.filter((a) => a.level === 'warning').length,
+    info: alerts.filter((a) => a.level === 'info').length,
+    total: alerts.length,
+  }
+}
+
 export default function App() {
   const [repoPath, setRepoPath] = useState('c:\\_PROJETOS\\Quadro-Negro')
   const [status, setStatus] = useState('Conectando…')
@@ -101,6 +118,9 @@ export default function App() {
         setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
+      if (s.version && s.version !== '0.24.0') {
+        setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
+      }
       const h = await listHistory()
       setHistory(h.items)
     } catch {
@@ -112,8 +132,8 @@ export default function App() {
     try {
       const p = await getPortfolio(portfolioRoot)
       setPortfolio({
-        summary: p.summary,
-        items: p.items,
+        summary: p.summary ?? EMPTY_PORTFOLIO_SUMMARY,
+        items: p.items ?? [],
         chart: p.chart,
         history: p.history,
         heatmap: p.heatmap,
@@ -123,14 +143,18 @@ export default function App() {
       if (p.goals) setPortfolioGoals(p.goals)
       if (p.goalsProgress) setGoalsProgress(p.goalsProgress)
       const a = await getPortfolioAlerts(portfolioRoot)
-      setPortfolioAlerts({
-        alerts: a.alerts,
-        summary: a.summary,
-        goals: a.goals,
-        progress: a.progress,
-      })
-      if (a.goals) setPortfolioGoals(a.goals)
-      if (a.progress) setGoalsProgress(a.progress)
+      if (Array.isArray(a.alerts) && a.summary && typeof a.summary.total === 'number') {
+        setPortfolioAlerts({
+          alerts: a.alerts,
+          summary: a.summary,
+          goals: a.goals,
+          progress: a.progress,
+        })
+        if (a.goals) setPortfolioGoals(a.goals)
+        if (a.progress) setGoalsProgress(a.progress)
+      } else {
+        setPortfolioAlerts(null)
+      }
     } catch {
       setPortfolio(null)
       setPortfolioAlerts(null)
@@ -162,25 +186,22 @@ export default function App() {
           await loadRepoContext(data.repo.path, data.analysisId)
         }
         if (data.scanDiff?.healthDelta != null && data.scanDiff.healthDelta <= -5) {
-          setPortfolioAlerts((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  alerts: [
-                    {
-                      level: 'warning',
-                      slug: data.repo.slug,
-                      path: data.repo.path,
-                      code: 'watch-regression',
-                      message: `Monitor: health caiu ${data.scanDiff!.healthDelta} pts`,
-                      action: 'scan',
-                      health: data.health.overall,
-                    },
-                    ...prev.alerts,
-                  ].slice(0, 20),
-                }
-              : prev,
-          )
+          setPortfolioAlerts((prev) => {
+            if (!prev?.summary) return prev
+            const alerts = [
+              {
+                level: 'warning' as const,
+                slug: data.repo!.slug,
+                path: data.repo!.path,
+                code: 'watch-regression',
+                message: `Monitor: health caiu ${data.scanDiff!.healthDelta} pts`,
+                action: 'scan',
+                health: data.health.overall,
+              },
+              ...prev.alerts,
+            ].slice(0, 20)
+            return { ...prev, alerts, summary: summarizeAlerts(alerts) }
+          })
         }
       } catch {
         /* ignore watch errors */
@@ -474,7 +495,7 @@ export default function App() {
   }
 
   async function runBatchEvolve(dryRun: boolean) {
-    if (!portfolioAlerts?.summary.critical) {
+    if (!portfolioAlerts?.summary?.critical) {
       return alert('Nenhum alerta crítico no portfolio')
     }
     setBusy(true)
@@ -852,7 +873,7 @@ export default function App() {
             Salvar metas
           </button>
         </div>
-        {goalsProgress && (
+        {goalsProgress != null && typeof goalsProgress.total === 'number' && (
           <p className="hint">
             Progresso: {goalsProgress.atTarget}/{goalsProgress.total} na meta alvo · {goalsProgress.belowMin}{' '}
             abaixo do mínimo
@@ -917,7 +938,7 @@ export default function App() {
             ))}
           </ul>
         )}
-        {portfolioAlerts && portfolioAlerts.summary.total > 0 && (
+        {portfolioAlerts && (portfolioAlerts.summary?.total ?? 0) > 0 && (
           <div className="alerts-box">
             <strong>
               Alertas: {portfolioAlerts.summary.critical} críticos · {portfolioAlerts.summary.warning} avisos ·{' '}
@@ -960,8 +981,8 @@ export default function App() {
         {portfolio && (
           <>
             <p>
-              {portfolio.summary.total} repos · média {portfolio.summary.averageHealth}/100 ·{' '}
-              {portfolio.summary.needsAttention.length} precisam atenção (&lt;70)
+              {portfolio.summary?.total ?? portfolio.items.length} repos · média {portfolio.summary?.averageHealth ?? 0}
+              /100 · {(portfolio.summary?.needsAttention ?? []).length} precisam atenção (&lt;70)
             </p>
             {portfolio.chart && (
               <PortfolioHealthChart
@@ -1100,7 +1121,7 @@ export default function App() {
             )}
           </section>
 
-          {result.qualitySignals && (
+          {result.qualitySignals?.summary && (
             <section className="card">
               <h2>Sinais de qualidade</h2>
               <QualitySignalsPanel quality={result.qualitySignals} />

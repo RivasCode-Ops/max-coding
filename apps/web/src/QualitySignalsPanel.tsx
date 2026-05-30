@@ -5,10 +5,11 @@ type Props = {
 }
 
 export default function QualitySignalsPanel({ quality }: Props) {
+  const summary = quality.summary ?? { passed: 0, total: 0, pct: 0 }
   return (
     <div className="quality-signals-wrap">
       <p className="note">
-        {quality.summary.passed}/{quality.summary.total} sinais ok ({quality.summary.pct}%)
+        {summary.passed}/{summary.total} sinais ok ({summary.pct}%)
       </p>
       <ul className="quality-groups">
         {quality.groups.map((g) => (

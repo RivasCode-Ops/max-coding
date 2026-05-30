@@ -5,8 +5,14 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error((data as { error?: string }).error || res.statusText)
+  const ct = res.headers.get('content-type') || ''
+  if (!ct.includes('application/json')) {
+    throw new Error(
+      'API desatualizada ou offline — pare o processo na porta 3847 e rode npm start na raiz do max-coding',
+    )
+  }
+  const data = (await res.json()) as { error?: string }
+  if (!res.ok) throw new Error(data.error || res.statusText)
   return data as T
 }
 

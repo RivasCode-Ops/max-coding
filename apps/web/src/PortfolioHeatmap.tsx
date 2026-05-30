@@ -12,8 +12,8 @@ export default function PortfolioHeatmapPanel({ heatmap }: Props) {
   return (
     <div className="portfolio-heatmap-wrap">
       <p className="note">
-        {heatmap.summary.repoCount} repos · fraquezas:{' '}
-        {heatmap.summary.weakestCategories.map((w) => w.label).join(', ') || '—'}
+        {heatmap.summary?.repoCount ?? heatmap.columns.length} repos · fraquezas:{' '}
+        {(heatmap.summary?.weakestCategories ?? []).map((w) => w.label).join(', ') || '—'}
       </p>
       <div className="heatmap-scroll">
         <table className="heatmap-table">
