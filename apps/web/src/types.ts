@@ -1,3 +1,32 @@
+export type ActionSuggestion = {
+  kind: string
+  id: string
+  title: string
+  subtitle?: string
+  score: number
+  priority: number
+  pilotFix?: string | null
+  prompt: string
+  written?: { written: string; relative: string; filename: string }
+  cursorHint?: string
+}
+
+export type SuggestActionResult = {
+  request: string
+  suggestions: ActionSuggestion[]
+  note?: string | null
+  profile?: { frameworks?: string[]; signals?: string[] }
+}
+
+export type CursorApplyResult = {
+  recommendationId: string
+  title: string
+  prompt: string
+  written?: { written: string; relative: string; filename: string }
+  pilotFix?: string | null
+  cursorHint: string
+}
+
 export type HealthTrendPoint = {
   health_overall: number
   health_grade?: string

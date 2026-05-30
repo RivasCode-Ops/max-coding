@@ -21,7 +21,7 @@ npm run apply-pilot -- c:\_PROJETOS\Quadro-Negro  # aplicar P1/P2
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.9)
+## V1 PRD — status (v0.10)
 
 | Requisito | Status |
 |-----------|--------|
@@ -41,6 +41,7 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 5 cloud** | ✅ GitHub App/PAT, PR comments, webhook |
 | **Fase 6 polish** | ✅ trend SVG, feedback stats, watch mode |
 | **Fase 7 piloto** | ✅ apply-pilot P1/P2, Quadro-Negro 97/100 |
+| **Fase 8 Cursor** | ✅ aplicar recomendações + busca por ação na UI |
 
 ### Fase 3 (local-first)
 
@@ -83,6 +84,14 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 |---------|-----------|
 | Aplicar P1/P2 automático | `npm run apply-pilot -- <path>` · `POST /api/apply-pilot` |
 | Piloto Quadro-Negro | 88 → **97/100** (+9 pts) |
+
+### Fase 8 (Cursor Agent)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Aplicar recomendação no Cursor | Botão na UI · `POST /api/cursor/apply` |
+| Buscar melhor opção por ação | Campo na UI · `POST /api/suggest-action` |
+| Tasks em `.cursor/max-stack/tasks/` | Prompt pronto para `@arquivo` no Agent |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

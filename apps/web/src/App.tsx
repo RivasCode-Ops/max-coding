@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, getAnalysis, getAnalysisFeedback, getPortfolio, getStatus, getTrend, installHook, listHistory, postPrComment, sendFeedback, validateRepo } from './api'
-import type { AnalysisResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary } from './types'
+import { analyze, applyPilot, applyRules, cursorApply, getAnalysis, getAnalysisFeedback, getPortfolio, getStatus, getTrend, installHook, listHistory, postPrComment, sendFeedback, suggestAction, validateRepo } from './api'
+import type { ActionSuggestion, AnalysisResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import './App.css'
 
@@ -21,6 +21,10 @@ export default function App() {
   const [githubAuth, setGithubAuth] = useState<string>('')
   const [feedbackSummary, setFeedbackSummary] = useState<FeedbackSummary | null>(null)
   const [recFeedback, setRecFeedback] = useState<Record<string, FeedbackRecStats>>({})
+  const [actionRequest, setActionRequest] = useState('')
+  const [suggestions, setSuggestions] = useState<ActionSuggestion[] | null>(null)
+  const [suggestNote, setSuggestNote] = useState<string | null>(null)
+  const [cursorMsg, setCursorMsg] = useState<string | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -172,6 +176,55 @@ export default function App() {
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erro')
     }
+  }
+
+  async function runCursorApply(recommendationId: string, autoPilot = false) {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return alert('Informe o repositório')
+    setBusy(true)
+    setCursorMsg(null)
+    try {
+      const r = await cursorApply(path, recommendationId, result?.analysisId, autoPilot)
+      const hint = r.cursorHint || `@.cursor/max-stack/tasks/`
+      await navigator.clipboard.writeText(hint.startsWith('@') ? hint : r.prompt)
+      const lines = [
+        r.written?.relative ? `Task: ${r.written.relative}` : 'Prompt gerado',
+        r.cursorHint,
+        'Referência copiada — abra Cursor Agent (Ctrl+I) e cole ou use @arquivo',
+      ]
+      if (r.pilotFix) lines.push(autoPilot ? `Pilot aplicado: ${r.pilotFix}` : `Pilot disponível: ${r.pilotFix}`)
+      setCursorMsg(lines.join('\n'))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runSuggestAction() {
+    const path = result?.repo?.path || repoPath.trim()
+    const request = actionRequest.trim()
+    if (!path || !request) return alert('Informe repo e o que deseja fazer')
+    setBusy(true)
+    setSuggestions(null)
+    setSuggestNote(null)
+    setCursorMsg(null)
+    try {
+      const res = await suggestAction(path, request, result?.analysisId)
+      setSuggestions(res.suggestions)
+      setSuggestNote(res.note || null)
+      if (res.suggestions.length === 0 && res.note) {
+        alert(res.note)
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function applySuggestion(s: ActionSuggestion, autoPilot = false) {
+    await runCursorApply(s.id, autoPilot || Boolean(s.pilotFix && s.kind === 'pilot'))
   }
 
   async function load(id: number) {
@@ -481,6 +534,68 @@ export default function App() {
           )}
 
           <section className="card">
+            <h2>O que você quer fazer?</h2>
+            <p className="note">
+              Descreva a ação desejada — Max busca recomendações, achados e gaps do projeto e sugere implementações.
+            </p>
+            <textarea
+              className="action-input"
+              rows={3}
+              value={actionRequest}
+              onChange={(e) => setActionRequest(e.target.value)}
+              placeholder="Ex.: adicionar testes, configurar CI, melhorar segurança, refatorar main.js…"
+            />
+            <div className="row">
+              <button type="button" disabled={busy} onClick={runSuggestAction}>
+                Buscar melhor opção
+              </button>
+            </div>
+            {suggestNote && !suggestions?.length && <p className="note">{suggestNote}</p>}
+            {suggestions && suggestions.length > 0 && (
+              <ul className="suggestions">
+                {suggestions.map((s) => (
+                  <li key={`${s.kind}-${s.id}`} className="suggestion-item">
+                    <div className="suggestion-head">
+                      <strong>
+                        [{s.kind}] {s.title}
+                      </strong>
+                      <span className="suggestion-score">score {s.score}</span>
+                    </div>
+                    {s.subtitle && <p className="note">{s.subtitle}</p>}
+                    {s.written?.relative && <small className="note">Task: {s.written.relative}</small>}
+                    <div className="row feedback-row">
+                      <button type="button" className="tiny cursor-btn" disabled={busy} onClick={() => applySuggestion(s)}>
+                        Aplicar no Cursor
+                      </button>
+                      {s.pilotFix && (
+                        <button
+                          type="button"
+                          className="tiny secondary"
+                          disabled={busy}
+                          onClick={() => applySuggestion(s, true)}
+                        >
+                          + pilot ({s.pilotFix})
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="tiny secondary"
+                        onClick={() => {
+                          navigator.clipboard.writeText(s.prompt)
+                          alert('Prompt copiado!')
+                        }}
+                      >
+                        Copiar prompt
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {cursorMsg && <pre className="cursor-msg">{cursorMsg}</pre>}
+          </section>
+
+          <section className="card">
             <h2>Recomendações ({result.recommendations?.length || 0})</h2>
             {result.recommendations?.map((r) => (
               <article key={r.id} className="rec">
@@ -489,6 +604,14 @@ export default function App() {
                 </strong>
                 <p>{r.suggestedUpgrade || r.problem}</p>
                 <div className="row feedback-row">
+                  <button
+                    type="button"
+                    className="tiny cursor-btn"
+                    disabled={busy}
+                    onClick={() => runCursorApply(r.id)}
+                  >
+                    Aplicar no Cursor
+                  </button>
                   <button
                     type="button"
                     className={`tiny ${feedbackSent[r.id] === 'up' ? 'active' : ''}`}

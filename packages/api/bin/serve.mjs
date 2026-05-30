@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.9.0',
+      version: '0.10.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -233,6 +233,75 @@ async function handle(req, res) {
 
     const applied = applyCursorRules(targetPath, rules, slug)
     return sendJson(res, 200, applied)
+  }
+
+  if (path === '/api/cursor/apply' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, analysisId, recommendationId, autoPilot = false } = body
+    if (!recommendationId) return sendJson(res, 400, { error: 'recommendationId obrigatório' })
+
+    let analysisResult = null
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+      analysisResult = row.data
+      analysisResult.repo = analysisResult.repo || { path: row.path, slug: row.slug }
+    } else if (repoPath) {
+      analysisResult = await analyzeRepository(resolve(repoPath), {
+        mode: 'quick',
+        writeReports: false,
+        persistSqlite: false,
+      })
+    } else {
+      return sendJson(res, 400, { error: 'Informe path ou analysisId' })
+    }
+
+    const { applyRecommendationViaCursor } = await import('../../core/lib/cursor-apply.mjs')
+    const applied = applyRecommendationViaCursor(analysisResult, recommendationId)
+
+    let pilotResult = null
+    if (autoPilot && applied.pilotFix && analysisResult.repo?.path) {
+      const { applyPilotFixes } = await import('../../core/lib/apply-pilot.mjs')
+      pilotResult = applyPilotFixes(analysisResult.repo.path, {
+        fixes: [applied.pilotFix],
+        slug: analysisResult.repo.slug,
+      })
+    }
+
+    return sendJson(res, 200, { ...applied, pilotResult })
+  }
+
+  if (path === '/api/suggest-action' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, request, analysisId } = body
+    if (!repoPath || !request) return sendJson(res, 400, { error: 'path e request obrigatórios' })
+
+    const abs = resolve(repoPath)
+    const slug = basename(abs)
+    let analysisResult = null
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (row) {
+        analysisResult = row.data
+        analysisResult.repo = analysisResult.repo || { path: row.path, slug: row.slug }
+      }
+    }
+    if (!analysisResult) {
+      analysisResult = await analyzeRepository(abs, { mode: 'quick', writeReports: false, persistSqlite: false })
+    }
+
+    const { suggestActions } = await import('../../core/lib/action-suggester.mjs')
+    const { writeCursorTask } = await import('../../core/lib/cursor-apply.mjs')
+    const result = suggestActions(request, { repoPath: abs, slug, analysisResult })
+
+    for (const s of result.suggestions.slice(0, 3)) {
+      if (analysisResult.repo?.path) {
+        s.written = writeCursorTask(analysisResult.repo.path, slug, s.id, s.prompt)
+        s.cursorHint = `@${s.written.relative}`
+      }
+    }
+
+    return sendJson(res, 200, result)
   }
 
   if (path === '/api/analyze' && req.method === 'POST') {

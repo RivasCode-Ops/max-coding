@@ -131,6 +131,25 @@ await step('Piloto Quadro-Negro (Fase 7)', async () => {
   ok(`Quadro-Negro ${after.health.summary}`)
 })
 
+await step('Cursor apply + suggest action (Fase 8)', async () => {
+  const { buildCursorApplyPrompt, applyRecommendationViaCursor } = await import('./packages/core/lib/cursor-apply.mjs')
+  const { suggestActions } = await import('./packages/core/lib/action-suggester.mjs')
+  const md = buildCursorApplyPrompt({ title: 'Test', problem: 'x' }, {})
+  if (!md.includes('Max Stack')) throw new Error('prompt inválido')
+  const result = await analyzeRepository(ROOT, { mode: 'quick', writeReports: false })
+  if (!result.recommendations?.length) throw new Error('sem recomendações')
+  const applied = applyRecommendationViaCursor(result, result.recommendations[0].id, { writeFile: false })
+  if (!applied.prompt) throw new Error('apply cursor falhou')
+  const sug = suggestActions('eslint lint qualidade', {
+    repoPath: ROOT,
+    slug: 'max-coding',
+    analysisResult: result,
+    profile: result.profile,
+  })
+  if (!sug.suggestions.length) throw new Error('suggest-action vazio')
+  ok(`cursor apply + ${sug.suggestions.length} sugestões`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

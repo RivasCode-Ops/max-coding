@@ -65,6 +65,18 @@ input {
   color: #fff;
 }
 
+textarea.action-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0b1220;
+  color: #fff;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 72px;
+}
+
 .row {
   display: flex;
   gap: 8px;
@@ -237,4 +249,43 @@ button.tiny.active {
 .rec-stats {
   align-self: center;
   font-size: 0.8rem;
+}
+
+button.cursor-btn {
+  background: #7c3aed;
+}
+
+.suggestions {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+
+.suggestion-item {
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.suggestion-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.suggestion-score {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.cursor-msg {
+  margin-top: 10px;
+  padding: 10px;
+  background: #1e1b4b;
+  border: 1px solid #4338ca;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
 }

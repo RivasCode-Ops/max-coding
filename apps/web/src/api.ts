@@ -1,4 +1,4 @@
-import type { AnalysisResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status, SuggestActionResult } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -85,5 +85,19 @@ export function applyPilot(path: string, dryRun = false) {
   }>('/api/apply-pilot', {
     method: 'POST',
     body: JSON.stringify({ path, dryRun }),
+  })
+}
+
+export function cursorApply(path: string, recommendationId: string, analysisId?: number, autoPilot = false) {
+  return api<CursorApplyResult>('/api/cursor/apply', {
+    method: 'POST',
+    body: JSON.stringify({ path, recommendationId, analysisId, autoPilot }),
+  })
+}
+
+export function suggestAction(path: string, request: string, analysisId?: number) {
+  return api<SuggestActionResult>('/api/suggest-action', {
+    method: 'POST',
+    body: JSON.stringify({ path, request, analysisId }),
   })
 }
