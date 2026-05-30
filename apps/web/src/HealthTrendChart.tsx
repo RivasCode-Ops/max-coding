@@ -1,4 +1,4 @@
-import type { HealthTrendPoint } from '../types'
+import type { HealthTrendPoint } from './types'
 
 type Props = {
   points: HealthTrendPoint[]

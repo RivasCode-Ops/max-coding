@@ -92,6 +92,18 @@
 - `task-registry.mjs` — listagem tasks + SQLite `cursor_tasks`
 - `apply-batch` P1/P2 · UI **Verificar implementação**
 
+### Bloco L — Fase 10 Contexto (v0.12) ✅
+
+- `repo-context.mjs` — git remote, owner/repo, next actions
+- UI **Repo ativo** + sync PR + portfolio highlight
+- Checkbox validar scripts no scan
+
+### Bloco M — Fase 11 Export (v0.13) ✅
+
+- `report-export.mjs` — relatório executivo markdown
+- `repo-compare.mjs` — comparar health/categorias/recs entre repos
+- `npm run report` + UI exportar + comparar no portfolio
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -107,3 +119,5 @@
 - [x] Fase 7 piloto (apply-pilot, Quadro-Negro 97/100)
 - [x] Fase 8 Cursor (apply + suggest-action)
 - [x] Fase 9 Verify (QA loop + batch + task registry)
+- [x] Fase 10 Contexto (repo ativo + next actions + sync PR)
+- [x] Fase 11 Export (relatório + comparar repos)

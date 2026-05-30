@@ -85,10 +85,33 @@ export type Finding = {
   priority: number
 }
 
+export type RepoCompareResult = {
+  a: { slug: string; health?: string; overall: number }
+  b: { slug: string; health?: string; overall: number }
+  healthDelta: number
+  winner: string
+  summary: string
+  categoryCompare: { id: string; a: number; b: number; delta: number }[]
+  recsOnlyA: string[]
+  recsOnlyB: string[]
+  markdown?: string
+}
+
+export type RepoContext = {
+  path: string
+  slug: string
+  ownerRepo?: string | null
+  source: string
+  url?: string | null
+  githubLinked: boolean
+  nextActions: { id: string; kind: string; title: string; detail: string; action: string }[]
+  profileSummary?: { frameworks?: string[]; hasCi?: boolean }
+}
+
 export type AnalysisResult = {
   analysisId?: number
   mode: string
-  repo: { slug: string; path: string; source?: string; url?: string | null }
+  repo: { slug: string; path: string; source?: string; url?: string | null; ownerRepo?: string | null }
   health: { overall: number; grade: string; summary: string; categories: HealthCategory[] }
   findings: Finding[]
   recommendations: { id: string; title: string; priority: number; suggestedUpgrade?: string; problem?: string; category: string }[]

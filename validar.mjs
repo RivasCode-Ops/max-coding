@@ -164,6 +164,29 @@ await step('Verify loop + tasks (Fase 9)', async () => {
   ok(`verify ${report.verdict} · ${tasks.length} tasks no self-scan`)
 })
 
+await step('Repo context + next actions (Fase 10)', async () => {
+  const { buildRepoContext, suggestNextActions } = await import('./packages/core/lib/repo-context.mjs')
+  const result = await analyzeRepository(ROOT, { mode: 'quick', writeReports: false })
+  const ctx = buildRepoContext(ROOT, result)
+  if (!ctx.slug) throw new Error('contexto sem slug')
+  const actions = suggestNextActions(result)
+  ok(`${ctx.slug} · ${actions.length} ações sugeridas · github=${ctx.githubLinked}`)
+})
+
+await step('Report export + compare (Fase 11)', async () => {
+  const { generateExecutiveReport } = await import('./packages/core/lib/report-export.mjs')
+  const { compareAnalyses } = await import('./packages/core/lib/repo-compare.mjs')
+  const result = await analyzeRepository(ROOT, { mode: 'quick', writeReports: false })
+  const md = generateExecutiveReport(result)
+  if (!md.includes('Health score')) throw new Error('report inválido')
+  const pilot = join(ROOT, '..', 'Quadro-Negro')
+  if (existsSync(pilot)) {
+    const other = await analyzeRepository(pilot, { mode: 'quick', writeReports: false, githubSearch: false })
+    const cmp = compareAnalyses(result, other)
+    ok(`report ${md.length} chars · compare ${cmp.winner}`)
+  } else ok(`report ${md.length} chars`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

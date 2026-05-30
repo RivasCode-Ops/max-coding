@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.11.0',
+      version: '0.13.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -82,6 +82,19 @@ async function handle(req, res) {
     return sendJson(res, 200, { items: listRepositories(getDb()) })
   }
 
+  if (path === '/api/repo-context' && req.method === 'GET') {
+    const repoPath = url.searchParams.get('path')
+    if (!repoPath) return sendJson(res, 400, { error: 'path obrigatório' })
+    const analysisId = url.searchParams.get('analysisId')
+    let analysisResult = null
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (row) analysisResult = row.data
+    }
+    const { buildRepoContext } = await import('../../core/lib/repo-context.mjs')
+    return sendJson(res, 200, buildRepoContext(resolve(repoPath), analysisResult))
+  }
+
   const analysisMatch = path.match(/^\/api\/analyses\/(\d+)(?:\/([\w-]+))?$/)
   if (analysisMatch && req.method === 'GET') {
     const id = Number(analysisMatch[1])
@@ -97,6 +110,14 @@ async function handle(req, res) {
     }
     if (sub === 'diff') {
       return sendJson(res, 200, row.data?.scanDiff || { hasPrevious: false })
+    }
+    if (sub === 'feedback') {
+      return sendJson(res, 200, { stats: getFeedbackStatsForAnalysis(getDb(), id) })
+    }
+    if (sub === 'report') {
+      const { generateExecutiveReport } = await import('../../core/lib/report-export.mjs')
+      const md = generateExecutiveReport(row.data)
+      return sendJson(res, 200, { markdown: md, slug: row.slug })
     }
     return sendJson(res, 200, row)
   }
@@ -380,6 +401,31 @@ async function handle(req, res) {
     return sendJson(res, 200, report)
   }
 
+  if (path === '/api/compare' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { pathA, pathB, analysisIdA, analysisIdB } = body
+    let resultA = null
+    let resultB = null
+    if (analysisIdA) {
+      const row = getAnalysis(getDb(), Number(analysisIdA))
+      if (!row) return sendJson(res, 404, { error: 'Análise A não encontrada' })
+      resultA = row.data
+    } else if (pathA) {
+      resultA = await analyzeRepository(pathA, { mode: 'quick', writeReports: false, persistSqlite: false, githubSearch: false })
+    }
+    if (analysisIdB) {
+      const row = getAnalysis(getDb(), Number(analysisIdB))
+      if (!row) return sendJson(res, 404, { error: 'Análise B não encontrada' })
+      resultB = row.data
+    } else if (pathB) {
+      resultB = await analyzeRepository(pathB, { mode: 'quick', writeReports: false, persistSqlite: false, githubSearch: false })
+    }
+    if (!resultA || !resultB) return sendJson(res, 400, { error: 'Informe pathA+pathB ou analysisIdA+analysisIdB' })
+    const { compareAnalyses, compareToMarkdown } = await import('../../core/lib/repo-compare.mjs')
+    const comparison = compareAnalyses(resultA, resultB)
+    return sendJson(res, 200, { ...comparison, markdown: compareToMarkdown(comparison) })
+  }
+
   if (path === '/api/analyze' && req.method === 'POST') {
     const body = await readBody(req)
     const { path: repoPath, mode = 'quick', validateRepo = false, applyRules = false } = JSON.parse(body || '{}')
@@ -406,8 +452,16 @@ function serveStatic(res, urlPath) {
   const safe = urlPath === '/' ? '/index.html' : urlPath
   const file = join(base, safe.replace(/\.\./g, ''))
   if (!file.startsWith(base) || !existsSync(file)) {
+    if (safe.startsWith('/assets/') || safe.endsWith('.js') || safe.endsWith('.css')) {
+      res.writeHead(404)
+      res.end('Not found')
+      return
+    }
     if (existsSync(join(WEB_DIST, 'index.html'))) {
-      res.writeHead(200, { 'Content-Type': 'text/html' })
+      res.writeHead(200, {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      })
       res.end(readFileSync(join(WEB_DIST, 'index.html')))
       return
     }
@@ -415,7 +469,9 @@ function serveStatic(res, urlPath) {
     res.end('UI não encontrada — rode npm run build:web')
     return
   }
-  res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'application/octet-stream' })
+  const cache =
+    safe === '/index.html' ? 'no-cache, no-store, must-revalidate' : 'public, max-age=31536000, immutable'
+  res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'application/octet-stream', 'Cache-Control': cache })
   res.end(readFileSync(file))
 }
 

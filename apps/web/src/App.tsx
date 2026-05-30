@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, cursorApply, cursorApplyBatch, getAnalysis, getAnalysisFeedback, getPortfolio, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, VerificationReport } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, getAnalysis, getAnalysisFeedback, getAnalysisReport, getPortfolio, getRepoContext, getStatus, getTrend, installHook, listCursorTasks, listHistory, postPrComment, sendFeedback, suggestAction, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport } from './types'
 import HealthTrendChart from './HealthTrendChart'
 import './App.css'
 
@@ -27,11 +27,16 @@ export default function App() {
   const [cursorMsg, setCursorMsg] = useState<string | null>(null)
   const [cursorTasks, setCursorTasks] = useState<CursorTaskFile[]>([])
   const [verifyReport, setVerifyReport] = useState<VerificationReport | null>(null)
+  const [repoContext, setRepoContext] = useState<RepoContext | null>(null)
+  const [validateOnScan, setValidateOnScan] = useState(false)
+  const [activeSlug, setActiveSlug] = useState<string | null>(null)
+  const [compareTarget, setCompareTarget] = useState('')
+  const [compareResult, setCompareResult] = useState<RepoCompareResult | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
       const fb = await getAnalysisFeedback(analysisId)
-      setRecFeedback(fb.stats)
+      setRecFeedback(fb.stats ?? {})
     } catch {
       setRecFeedback({})
     }
@@ -50,7 +55,7 @@ export default function App() {
     refresh()
   }, [])
 
-  async function refresh() {
+  async function refreshHistory() {
     try {
       const s = await getStatus()
       setStatus(`Max Stack online · ${s.db} análises · v${s.version}`)
@@ -64,14 +69,33 @@ export default function App() {
       if (s.feedback) setFeedbackSummary(s.feedback)
       const h = await listHistory()
       setHistory(h.items)
-      try {
-        const p = await getPortfolio(portfolioRoot)
-        setPortfolio({ summary: p.summary, items: p.items })
-      } catch {
-        setPortfolio(null)
-      }
     } catch {
       setStatus('Offline — rode npm start na raiz do max-coding')
+    }
+  }
+
+  async function refreshPortfolio() {
+    try {
+      const p = await getPortfolio(portfolioRoot)
+      setPortfolio({ summary: p.summary, items: p.items })
+    } catch {
+      setPortfolio(null)
+    }
+  }
+
+  async function refresh() {
+    await refreshHistory()
+    await refreshPortfolio()
+  }
+
+  async function loadRepoContext(path: string, analysisId?: number) {
+    try {
+      const ctx = await getRepoContext(path, analysisId)
+      setRepoContext(ctx)
+      setActiveSlug(ctx.slug)
+      if (ctx.ownerRepo) setPrOwnerRepo(ctx.ownerRepo)
+    } catch {
+      setRepoContext(null)
     }
   }
 
@@ -79,12 +103,20 @@ export default function App() {
     if (!repoPath.trim()) return alert('Informe caminho ou URL GitHub')
     setBusy(true)
     setValidation(null)
+    setVerifyReport(null)
     try {
-      const res = await analyze(repoPath.trim(), mode, opts)
+      const res = await analyze(repoPath.trim(), mode, {
+        ...opts,
+        validateRepo: opts?.validateRepo ?? validateOnScan,
+      })
       const data = { ...res.data, analysisId: res.data.analysisId ?? res.id }
       setResult(data)
+      if (data.repo?.path) await loadRepoContext(data.repo.path, data.analysisId)
       if (data.analysisId) await loadRecFeedback(data.analysisId)
       if (data.repo?.path) await loadCursorTasks(data.repo.path)
+      if (data.repoValidation && !data.repoValidation.skipped) {
+        setValidation(data.repoValidation)
+      }
       if (data.repo?.slug) {
         try {
           setTrend(await getTrend(data.repo.slug))
@@ -92,7 +124,8 @@ export default function App() {
           setTrend(data.healthTrend || null)
         }
       }
-      await refresh()
+      await refreshHistory()
+      refreshPortfolio()
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erro')
     } finally {
@@ -239,6 +272,55 @@ export default function App() {
     await runCursorApply(s.id, autoPilot || Boolean(s.pilotFix && s.kind === 'pilot'))
   }
 
+  async function runCompare() {
+    const pathA = result?.repo?.path || repoPath.trim()
+    if (!pathA || !compareTarget) return alert('Selecione repo ativo e um alvo no portfolio')
+    const target = portfolio?.items.find((p) => p.slug === compareTarget)
+    if (!target) return alert('Repo alvo não encontrado')
+    setBusy(true)
+    setCompareResult(null)
+    try {
+      setCompareResult(await compareRepos(pathA, target.path))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function exportReport() {
+    if (!result?.analysisId) return alert('Faça uma análise primeiro')
+    setBusy(true)
+    try {
+      const r = await getAnalysisReport(result.analysisId)
+      await navigator.clipboard.writeText(r.markdown)
+      alert(`Relatório copiado! (${r.slug})`)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runContextAction(action: string) {
+    switch (action) {
+      case 'apply-batch':
+        return runApplyBatch()
+      case 'apply-pilot':
+        return runApplyPilot(false)
+      case 'validate':
+        return runValidate()
+      case 'cursor-batch':
+        return runApplyBatch()
+      case 'pr-preview':
+        return runPrComment(true)
+      case 'verify':
+        return runVerify()
+      default:
+        return
+    }
+  }
+
   async function runApplyBatch() {
     const path = result?.repo?.path || repoPath.trim()
     if (!path) return
@@ -262,7 +344,11 @@ export default function App() {
     try {
       const report = await verifyImplementation(path, result?.analysisId)
       setVerifyReport(report)
-      setResult((prev) => (prev ? { ...prev, health: report.after.health as AnalysisResult['health'] } : prev))
+      setResult((prev) =>
+        prev && report.after.health?.categories
+          ? { ...prev, health: report.after.health as AnalysisResult['health'] }
+          : prev,
+      )
       await loadCursorTasks(path)
       await refresh()
     } catch (e) {
@@ -280,8 +366,10 @@ export default function App() {
     if (row.data?.repo?.path) {
       setRepoPath(row.data.repo.path)
       await loadCursorTasks(row.data.repo.path)
+      await loadRepoContext(row.data.repo.path, id)
     }
     if (row.slug) {
+      setActiveSlug(row.slug)
       try {
         setTrend(await getTrend(row.slug))
       } catch {
@@ -292,6 +380,14 @@ export default function App() {
 
   return (
     <div className="layout">
+      {busy && (
+        <div className="loading-overlay" role="status" aria-live="polite">
+          <div className="loading-box">
+            <p>Analisando repositório…</p>
+            <small className="note">Pode levar até 1 minuto em Deep Scan</small>
+          </div>
+        </div>
+      )}
       <header>
         <h1>Max Stack</h1>
         <p>Auditoria local-first de repositórios</p>
@@ -311,6 +407,10 @@ export default function App() {
           onChange={(e) => setRepoPath(e.target.value)}
           placeholder="c:\projeto ou https://github.com/org/repo"
         />
+        <label className="checkbox-row">
+          <input type="checkbox" checked={validateOnScan} onChange={(e) => setValidateOnScan(e.target.checked)} />
+          Validar scripts (test/build/lint) junto com o scan
+        </label>
         <div className="row">
           <button disabled={busy} onClick={() => run('quick')}>
             Quick Scan
@@ -344,9 +444,47 @@ export default function App() {
         )}
       </section>
 
+      {repoContext && (
+        <section className="card active-repo">
+          <h2>Repo ativo</h2>
+          <p>
+            <strong>{repoContext.slug}</strong> · {repoContext.source}
+            {repoContext.url && (
+              <>
+                {' '}
+                · <a href={repoContext.url}>{repoContext.ownerRepo || repoContext.url}</a>
+              </>
+            )}
+          </p>
+          {repoContext.nextActions.length > 0 && (
+            <>
+              <p className="note">Próximos passos sugeridos com base no scan:</p>
+              <ul className="next-actions">
+                {repoContext.nextActions.map((a) => (
+                  <li key={a.id}>
+                    <strong>{a.title}</strong>
+                    <span className="note"> — {a.detail}</span>
+                    {a.action !== 'info' && (
+                      <button type="button" className="tiny secondary" disabled={busy} onClick={() => runContextAction(a.action)}>
+                        Executar
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
+
       <section className="card">
         <h2>Comentário em PR (GitHub App)</h2>
-        <p className="note">Requer GITHUB_TOKEN ou GitHub App — ver docs/GITHUB-APP.md</p>
+        <p className="note">
+          Requer GITHUB_TOKEN ou GitHub App — ver docs/GITHUB-APP.md
+          {repoContext?.ownerRepo && prOwnerRepo === repoContext.ownerRepo && (
+            <> · sincronizado com repo ativo</>
+          )}
+        </p>
         <label>owner/repo</label>
         <input value={prOwnerRepo} onChange={(e) => setPrOwnerRepo(e.target.value)} placeholder="RivasCode-Ops/Quadro-Negro" />
         <label>Número do PR</label>
@@ -375,6 +513,52 @@ export default function App() {
               {portfolio.summary.total} repos · média {portfolio.summary.averageHealth}/100 ·{' '}
               {portfolio.summary.needsAttention.length} precisam atenção (&lt;70)
             </p>
+            {activeSlug && portfolio.items.length > 1 && (
+              <div className="compare-row">
+                <label>Comparar {activeSlug} com</label>
+                <select value={compareTarget} onChange={(e) => setCompareTarget(e.target.value)}>
+                  <option value="">— selecione —</option>
+                  {portfolio.items
+                    .filter((p) => p.slug !== activeSlug)
+                    .map((p) => (
+                      <option key={p.slug} value={p.slug}>
+                        {p.slug} ({p.health != null ? `${p.health}/100` : '—'})
+                      </option>
+                    ))}
+                </select>
+                <button type="button" className="secondary" disabled={busy || !compareTarget} onClick={runCompare}>
+                  Comparar
+                </button>
+              </div>
+            )}
+            {compareResult && (
+              <div className="compare-box">
+                <strong>{compareResult.summary}</strong>
+                <p className="note">
+                  {compareResult.a.slug} {compareResult.a.health} vs {compareResult.b.slug} {compareResult.b.health}
+                </p>
+                {compareResult.categoryCompare.length > 0 && (
+                  <ul>
+                    {compareResult.categoryCompare.slice(0, 6).map((c) => (
+                      <li key={c.id}>
+                        {c.id}: {c.delta >= 0 ? '+' : ''}
+                        {c.delta}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  type="button"
+                  className="tiny secondary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(compareResult.markdown || '')
+                    alert('Comparação copiada!')
+                  }}
+                >
+                  Copiar comparação
+                </button>
+              </div>
+            )}
             <table className="trend-table">
               <thead>
                 <tr>
@@ -385,11 +569,18 @@ export default function App() {
               </thead>
               <tbody>
                 {portfolio.items.slice(0, 12).map((p) => (
-                  <tr key={p.slug}>
+                  <tr key={p.slug} className={p.slug === activeSlug ? 'portfolio-active' : ''}>
                     <td>{p.slug}</td>
                     <td>{p.health != null ? `${p.health}/100` : '—'}</td>
                     <td>
-                      <button type="button" className="link" onClick={() => setRepoPath(p.path)}>
+                      <button
+                        type="button"
+                        className="link"
+                        onClick={() => {
+                          setRepoPath(p.path)
+                          setActiveSlug(p.slug)
+                        }}
+                      >
                         analisar
                       </button>
                     </td>
@@ -405,6 +596,11 @@ export default function App() {
         <>
           <section className="card">
             <h2>Resumo</h2>
+            <div className="row">
+              <button type="button" className="tiny secondary" disabled={busy || !result.analysisId} onClick={exportReport}>
+                Exportar relatório
+              </button>
+            </div>
             <p className="score">{result.health.summary}</p>
             <p>
               <strong>{result.repo.slug}</strong> · {result.repo.source || 'local'}
@@ -428,7 +624,7 @@ export default function App() {
           <section className="card">
             <h2>Health por categoria (12)</h2>
             <ul className="cats">
-              {result.health.categories.map((c) => (
+              {(result.health.categories || []).map((c) => (
                 <li key={c.id} className={c.status}>
                   {c.label || c.id}: {c.status} ({c.score}/{c.weight})
                 </li>
@@ -485,7 +681,7 @@ export default function App() {
                 {result.repoValidation.ok ? 'Scripts OK' : 'Algum script falhou'}
               </p>
               <ul>
-                {result.repoValidation.results.map((r) => (
+                {(result.repoValidation.results || []).map((r) => (
                   <li key={r.script} className={r.ok ? 'ok' : 'fail'}>
                     npm run {r.script} — {r.ok ? 'OK' : 'FAIL'}
                   </li>
@@ -694,7 +890,7 @@ export default function App() {
                   >
                     Não útil
                   </button>
-                  {recFeedback[r.id] && (recFeedback[r.id].useful > 0 || recFeedback[r.id].notUseful > 0) && (
+                  {recFeedback?.[r.id] && (recFeedback[r.id].useful > 0 || recFeedback[r.id].notUseful > 0) && (
                     <span className="note rec-stats">
                       👍 {recFeedback[r.id].useful} · 👎 {recFeedback[r.id].notUseful}
                     </span>

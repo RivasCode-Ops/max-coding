@@ -93,7 +93,7 @@ export async function analyzeRepository(input, options = {}) {
     auditMode,
     analysisMode: mode,
     generatedAt,
-    repo: { slug: intake.slug, path: intake.path, source: intake.source, url: intake.url },
+    repo: { slug: intake.slug, path: intake.path, source: intake.source, url: intake.url, ownerRepo: intake.ownerRepo },
     profile,
     health: pipeline.health,
     findings: pipeline.findings,

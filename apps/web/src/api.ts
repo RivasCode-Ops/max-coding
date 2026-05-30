@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, FeedbackRecStats, FeedbackSummary, HistoryItem, PortfolioItem, PortfolioSummary, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -119,5 +119,22 @@ export function verifyImplementation(path: string, analysisId?: number, validate
   return api<VerificationReport>('/api/verify', {
     method: 'POST',
     body: JSON.stringify({ path, analysisId, validateRepo }),
+  })
+}
+
+export function getRepoContext(path: string, analysisId?: number) {
+  const q = new URLSearchParams({ path })
+  if (analysisId) q.set('analysisId', String(analysisId))
+  return api<RepoContext>(`/api/repo-context?${q}`)
+}
+
+export function getAnalysisReport(analysisId: number) {
+  return api<{ markdown: string; slug: string }>(`/api/analyses/${analysisId}/report`)
+}
+
+export function compareRepos(pathA: string, pathB: string) {
+  return api<RepoCompareResult>('/api/compare', {
+    method: 'POST',
+    body: JSON.stringify({ pathA, pathB }),
   })
 }

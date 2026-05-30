@@ -18,11 +18,12 @@ npm run portfolio -- c:\_PROJETOS
 npm run pr-comment -- RivasCode-Ops/Quadro-Negro 1   # comentário em PR (GitHub)
 npm run apply-pilot -- c:\_PROJETOS\Quadro-Negro  # aplicar P1/P2
 npm run verify -- c:\_PROJETOS\Quadro-Negro       # verificar pós-implementação
+npm run report -- c:\_PROJETOS\Quadro-Negro      # exportar relatório markdown
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.11)
+## V1 PRD — status (v0.13)
 
 | Requisito | Status |
 |-----------|--------|
@@ -44,6 +45,8 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | **Fase 7 piloto** | ✅ apply-pilot P1/P2, Quadro-Negro 97/100 |
 | **Fase 8 Cursor** | ✅ aplicar recomendações + busca por ação na UI |
 | **Fase 9 Verify** | ✅ verificar implementação, tasks registry, apply batch P1/P2 |
+| **Fase 10 Contexto** | ✅ repo ativo, sync PR, portfolio highlight, próximos passos |
+| **Fase 11 Export** | ✅ relatório markdown + comparar repos no portfolio |
 
 ### Fase 3 (local-first)
 
@@ -103,6 +106,24 @@ Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 | Listar tasks Cursor | `GET /api/cursor/tasks?path=` |
 | Aplicar batch P1/P2 | Botão na UI · `POST /api/cursor/apply-batch` |
 | Registro SQLite `cursor_tasks` | Histórico de applies + verdict QA |
+
+### Fase 10 (contexto unificado)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Contexto do repo ativo | `GET /api/repo-context?path=` |
+| Próximos passos sugeridos | Painel na UI após scan |
+| Sync owner/repo → PR | Automático via git remote ou URL GitHub |
+| Portfolio highlight | Linha destacada do repo ativo |
+| Validar no scan | Checkbox na UI |
+
+### Fase 11 (export & compare)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Relatório executivo markdown | `npm run report -- <path>` · `GET /api/analyses/:id/report` |
+| Comparar dois repos | `POST /api/compare` · UI no portfolio |
+| Copiar relatório / comparação | Botões na UI |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 
