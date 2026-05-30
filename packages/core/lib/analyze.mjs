@@ -8,7 +8,10 @@ import { scanRepo } from '../../repo-scanner/lib/scan-repo.mjs'
 import { toMarkdown } from '../../recommender/lib/recommend.mjs'
 import { resolveRepositoryInput } from './intake.mjs'
 import { runPipeline, toExecutiveSummary, toPrPlan } from './pipeline.mjs'
-import { closeDb, getDb, saveAnalysisFull, upsertRepository } from './db.mjs'
+import { closeDb, getDb, getLatestAnalysisForRepo, saveAnalysisFull, upsertRepository } from './db.mjs'
+import { mergeGithubSearchIntoPatterns, searchComparableRepos } from './github-search.mjs'
+import { diffAnalyses } from './scan-diff.mjs'
+import { cursorRulesFilename, generateCursorRules } from './rules-generator.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
 
@@ -16,7 +19,7 @@ export function resolveProjectRoot() {
   return ROOT
 }
 
-export function analyzeRepository(input, options = {}) {
+export async function analyzeRepository(input, options = {}) {
   const {
     mode = 'quick',
     auditMode = 'audit',
@@ -24,6 +27,7 @@ export function analyzeRepository(input, options = {}) {
     writeReports = true,
     reportsBase = join(ROOT, 'reports'),
     forceRefresh = false,
+    githubSearch = mode === 'deep',
   } = options
 
   const intake = resolveRepositoryInput(input, { forceRefresh })
@@ -33,7 +37,18 @@ export function analyzeRepository(input, options = {}) {
   const profile = scanRepo(intake.path, intake.slug)
   profile.intake = { source: intake.source, url: intake.url, ownerRepo: intake.ownerRepo }
 
+  const db = persistSqlite ? getDb() : null
+  const repoId = db ? upsertRepository(db, intake) : null
+  const previousSnapshot = db && repoId ? getLatestAnalysisForRepo(db, repoId) : null
+
   const pipeline = runPipeline(profile, mode)
+
+  let githubComparable = null
+  let externalPatterns = pipeline.externalPatterns
+  if (githubSearch && mode === 'deep') {
+    githubComparable = await searchComparableRepos(profile)
+    externalPatterns = mergeGithubSearchIntoPatterns(externalPatterns, githubComparable)
+  }
 
   const result = {
     product: 'Max Stack',
@@ -46,11 +61,14 @@ export function analyzeRepository(input, options = {}) {
     health: pipeline.health,
     findings: pipeline.findings,
     recommendations: pipeline.recommendations,
-    externalPatterns: pipeline.externalPatterns,
+    externalPatterns,
+    githubComparable,
     backlog: pipeline.backlog,
     checklist: pipeline.checklist,
     prPlan: toPrPlan(pipeline.findings, { slug: intake.slug }),
     executiveSummary: null,
+    scanDiff: null,
+    cursorRules: null,
     runs: pipeline.runs,
     verification: pipeline.verification,
     signals: (profile.signals || []).map((s) => s.id),
@@ -59,19 +77,20 @@ export function analyzeRepository(input, options = {}) {
   }
 
   result.executiveSummary = toExecutiveSummary(result)
+  result.cursorRules = generateCursorRules(result)
+  result.scanDiff = diffAnalyses(result, previousSnapshot)
+
   if (mode === 'deep') {
-    result.reportMarkdown = toMarkdown(
-      { ...result, phase: 'PLAN', mode: auditMode },
-      profile,
-    )
+    result.reportMarkdown = toMarkdown({ ...result, phase: 'PLAN', mode: auditMode }, profile)
   }
 
   if (writeReports) writeReportArtifacts(result, reportsBase, intake.slug, stamp)
-  if (persistSqlite) {
-    const db = getDb()
-    const repoId = upsertRepository(db, intake)
+  if (persistSqlite && db && repoId) {
     result.analysisId = saveAnalysisFull(db, repoId, result)
     result.repositoryId = repoId
+    if (previousSnapshot && result.scanDiff) {
+      result.scanDiff.previousAnalysisId = previousSnapshot.analysisId
+    }
   }
 
   return result
@@ -82,6 +101,17 @@ function writeReportArtifacts(result, reportsBase, slug, stamp) {
   mkdirSync(outDir, { recursive: true })
   writeFileSync(join(outDir, `profile-${stamp}.json`), JSON.stringify(result.profile, null, 2), 'utf8')
   writeFileSync(join(outDir, `${result.mode}-${stamp}.json`), JSON.stringify(result, null, 2), 'utf8')
+
+  if (result.cursorRules) {
+    writeFileSync(
+      join(outDir, `cursor-rules-${stamp}.mdc`),
+      result.cursorRules,
+      'utf8',
+    )
+  }
+  if (result.scanDiff) {
+    writeFileSync(join(outDir, `scan-diff-${stamp}.json`), JSON.stringify(result.scanDiff, null, 2), 'utf8')
+  }
 
   if (result.mode === 'quick') {
     writeFileSync(
@@ -105,6 +135,7 @@ function writeReportArtifacts(result, reportsBase, slug, stamp) {
         health: result.health,
         findingCount: result.findings.length,
         recommendationCount: result.recommendations.length,
+        scanDiff: result.scanDiff,
         phase: 'VERIFY',
       },
       null,
@@ -114,4 +145,4 @@ function writeReportArtifacts(result, reportsBase, slug, stamp) {
   )
 }
 
-export { closeDb, getDb }
+export { closeDb, getDb, generateCursorRules, cursorRulesFilename, diffAnalyses }

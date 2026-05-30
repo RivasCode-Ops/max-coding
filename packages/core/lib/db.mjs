@@ -261,6 +261,28 @@ export function listRepositories(db) {
     .all()
 }
 
+export function getPreviousAnalysis(db, repoId, beforeAnalysisId) {
+  const row = db
+    .prepare(
+      `SELECT id, payload, created_at FROM analyses
+       WHERE repository_id = ? AND id < ?
+       ORDER BY id DESC LIMIT 1`,
+    )
+    .get(repoId, beforeAnalysisId)
+  if (!row) return null
+  const data = JSON.parse(row.payload)
+  return { ...data, analysisId: row.id, generatedAt: data.generatedAt || row.created_at }
+}
+
+export function getLatestAnalysisForRepo(db, repoId) {
+  const row = db
+    .prepare(`SELECT id, payload, created_at FROM analyses WHERE repository_id = ? ORDER BY id DESC LIMIT 1`)
+    .get(repoId)
+  if (!row) return null
+  const data = JSON.parse(row.payload)
+  return { ...data, analysisId: row.id }
+}
+
 export function dbExists() {
   return existsSync(DB_PATH)
 }

@@ -43,7 +43,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.3.0',
+      version: '0.4.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
     })
@@ -57,10 +57,18 @@ async function handle(req, res) {
     return sendJson(res, 200, { items: listRepositories(getDb()) })
   }
 
-  if (path.startsWith('/api/analyses/') && req.method === 'GET') {
-    const id = Number(path.split('/').pop())
+  const analysisMatch = path.match(/^\/api\/analyses\/(\d+)(?:\/([\w-]+))?$/)
+  if (analysisMatch && req.method === 'GET') {
+    const id = Number(analysisMatch[1])
+    const sub = analysisMatch[2]
     const row = getAnalysis(getDb(), id)
     if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+    if (sub === 'cursor-rules') {
+      return sendJson(res, 200, { content: row.data?.cursorRules || '' })
+    }
+    if (sub === 'diff') {
+      return sendJson(res, 200, row.data?.scanDiff || { hasPrevious: false })
+    }
     return sendJson(res, 200, row)
   }
 
@@ -68,7 +76,7 @@ async function handle(req, res) {
     const body = await readBody(req)
     const { path: repoPath, mode = 'quick' } = JSON.parse(body || '{}')
     if (!repoPath) return sendJson(res, 400, { error: 'Campo path obrigatório' })
-    const result = analyzeRepository(repoPath, { mode: mode === 'deep' ? 'deep' : 'quick' })
+    const result = await analyzeRepository(repoPath, { mode: mode === 'deep' ? 'deep' : 'quick' })
     return sendJson(res, 200, {
       id: result.analysisId,
       slug: result.repo.slug,

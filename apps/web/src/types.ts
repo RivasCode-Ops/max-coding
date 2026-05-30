@@ -29,6 +29,16 @@ export type AnalysisResult = {
   backlog: { id: string; title: string; priority: number }[]
   checklist: { id: string; item: string; done: boolean }[]
   prPlan?: { note: string; commits: { message: string }[] }
+  githubComparable?: { query: string; items: { fullName: string; url: string; stars: number }[]; note?: string }
+  scanDiff?: {
+    hasPrevious: boolean
+    healthDelta?: number
+    newFindings?: string[]
+    resolvedFindings?: string[]
+    improved?: boolean
+    previousAnalysisId?: number
+  }
+  cursorRules?: string
   executiveSummary?: { topGaps: string[]; stack: string }
 }
 

@@ -106,6 +106,51 @@ export default function App() {
             </ul>
           </section>
 
+          {result.scanDiff?.hasPrevious && (
+            <section className="card">
+              <h2>Diff vs scan anterior (#{result.scanDiff.previousAnalysisId})</h2>
+              <p>
+                Health: {result.scanDiff.healthDelta !== undefined && result.scanDiff.healthDelta >= 0 ? '+' : ''}
+                {result.scanDiff.healthDelta} pts · {result.scanDiff.improved ? 'melhorou' : 'regrediu'}
+              </p>
+              {result.scanDiff.resolvedFindings && result.scanDiff.resolvedFindings.length > 0 && (
+                <>
+                  <strong>Resolvidos:</strong>
+                  <ul>
+                    {result.scanDiff.resolvedFindings.map((t) => (
+                      <li key={t}>{t}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {result.scanDiff.newFindings && result.scanDiff.newFindings.length > 0 && (
+                <>
+                  <strong>Novos:</strong>
+                  <ul>
+                    {result.scanDiff.newFindings.map((t) => (
+                      <li key={t}>{t}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
+
+          {result.githubComparable && (
+            <section className="card">
+              <h2>GitHub Search</h2>
+              <p className="note">Query: {result.githubComparable.query}</p>
+              {result.githubComparable.note && <p className="note">{result.githubComparable.note}</p>}
+              <ul>
+                {result.githubComparable.items?.map((r) => (
+                  <li key={r.fullName}>
+                    <a href={r.url}>{r.fullName}</a> · ★ {r.stars}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="card">
             <h2>Achados ({result.findings?.length || 0})</h2>
             {result.findings?.map((f) => (
@@ -174,6 +219,23 @@ export default function App() {
                   <li key={i}>{c.message}</li>
                 ))}
               </ol>
+            </section>
+          )}
+          {result.cursorRules && (
+            <section className="card">
+              <h2>Cursor Rules (gerado)</h2>
+              <p className="note">Copie para .cursor/rules/ no repo analisado</p>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(result.cursorRules || '')
+                  alert('Copiado!')
+                }}
+              >
+                Copiar rules
+              </button>
+              <pre className="rules-preview">{result.cursorRules.slice(0, 1200)}…</pre>
             </section>
           )}
         </>

@@ -27,7 +27,9 @@ npm run deep -- c:\_PROJETOS\Quadro-Negro
 | SQLite normalizado | ✅ 9 entidades |
 | UI React + TypeScript | ✅ `apps/web` |
 | Backlog + checklist + PR plan | ✅ |
-| GitHub App / PR comments | ❌ Fase 3 |
+| GitHub Search API | ✅ Deep (opcional `GITHUB_TOKEN`) |
+| Diff histórico | ✅ entre scans do mesmo repo |
+| Gerador `.cursor/rules` | ✅ copiar na UI |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

@@ -149,6 +149,17 @@ button.link {
   font-size: 0.9rem;
 }
 
+.rules-preview {
+  margin-top: 10px;
+  padding: 10px;
+  background: #0b1220;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  overflow: auto;
+  max-height: 200px;
+  white-space: pre-wrap;
+}
+
 .history li {
   padding: 6px 0;
   border-bottom: 1px solid #1e293b;

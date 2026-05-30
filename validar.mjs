@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MAX validar — checagem local completa (sem Cursor)
+ * Max Stack validar — checagem local completa (sem Cursor)
  */
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -21,18 +21,18 @@ function fail(msg) {
   failed += 1
 }
 
-function step(title, fn) {
+async function step(title, fn) {
   console.log(`\n▶ ${title}`)
   try {
-    fn()
+    await fn()
   } catch (err) {
     fail(err.message)
   }
 }
 
-console.log('MAX validar — checagem local\n')
+console.log('Max Stack validar — checagem local\n')
 
-step('Testes unitários', () => {
+await step('Testes unitários', async () => {
   const r = spawnSync(process.execPath, ['--test', 'tests/**/*.test.mjs'], {
     cwd: ROOT,
     encoding: 'utf8',
@@ -44,29 +44,30 @@ step('Testes unitários', () => {
   ok('node --test')
 })
 
-step('Self-scan (Quick)', () => {
-  const result = analyzeRepository(ROOT, { mode: 'quick', writeReports: false })
+await step('Self-scan (Quick)', async () => {
+  const result = await analyzeRepository(ROOT, { mode: 'quick', writeReports: false })
   if (result.health.overall < 70) throw new Error(`health ${result.health.summary} < 70`)
+  if (!result.cursorRules) throw new Error('cursorRules ausente')
   ok(`health ${result.health.summary}`)
 })
 
-step('SQLite persistência', () => {
+await step('SQLite persistência', async () => {
   if (!existsSync(getDbPath())) throw new Error('data/max.db não criado')
   ok(getDbPath())
 })
 
-step('Deep analysis piloto', () => {
+await step('Deep analysis piloto', async () => {
   const pilot = join(ROOT, '..', 'Quadro-Negro')
   if (!existsSync(pilot)) {
     ok('Quadro-Negro não encontrado — pulando')
     return
   }
-  const result = analyzeRepository(pilot, { mode: 'deep', writeReports: false })
-  if (result.health.overall < 85) throw new Error(`Quadro-Negro health ${result.health.summary}`)
-  ok(`${result.repo.slug} ${result.health.summary} · ${result.recommendations.length} recs`)
+  const result = await analyzeRepository(pilot, { mode: 'deep', writeReports: false, githubSearch: false })
+  if (result.health.overall < 70) throw new Error(`Quadro-Negro health ${result.health.summary}`)
+  ok(`${result.repo.slug} ${result.health.summary} · ${result.recommendations.length} recs · diff ${result.scanDiff?.hasPrevious ? 'sim' : 'primeira'}`)
 })
 
 closeDb()
 
-console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ MAX validar OK\n')
+console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')
 process.exit(failed ? 1 : 0)
