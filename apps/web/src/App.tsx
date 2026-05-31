@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, downloadPortfolioScorecard, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioQuality, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, localApply, localApplyBatch, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry, WatchScheduleStatus } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, downloadPortfolioScorecard, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getAppInstallStatus, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioQuality, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installAppShortcut, installHook, installWatchSchedule, listCursorTasks, listHistory, localApply, localApplyBatch, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, AppInstallStatus, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry, WatchScheduleStatus } from './types'
 import PortfolioQualityPanel from './PortfolioQualityPanel'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
@@ -100,6 +100,8 @@ export default function App() {
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
   const [standaloneMode, setStandaloneMode] = useState(() => localStorage.getItem('max-standalone') !== '0')
   const [localMsg, setLocalMsg] = useState<string | null>(null)
+  const [appInstall, setAppInstall] = useState<AppInstallStatus | null>(null)
+  const [installMsg, setInstallMsg] = useState<string | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -136,11 +138,18 @@ export default function App() {
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
       if (s.standalone) setStandaloneMode(true)
-      if (s.version && s.version !== '0.30.0') {
+      if (s.version && s.version !== '0.31.0') {
         setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
       }
       const h = await listHistory()
       setHistory(h.items)
+      if (standaloneMode) {
+        try {
+          setAppInstall(await getAppInstallStatus())
+        } catch {
+          setAppInstall(null)
+        }
+      }
     } catch {
       setStatus('Offline — rode npm start na raiz do max-coding')
     }
@@ -473,6 +482,20 @@ export default function App() {
     localStorage.setItem('max-standalone', next ? '1' : '0')
   }
 
+  async function runInstallShortcut() {
+    setBusy(true)
+    setInstallMsg(null)
+    try {
+      const r = await installAppShortcut(false)
+      setInstallMsg(r.message || 'Atalho criado na área de trabalho')
+      setAppInstall(await getAppInstallStatus())
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function runCursorApply(recommendationId: string, autoPilot = false) {
     const path = result?.repo?.path || repoPath.trim()
     if (!path) return alert('Informe o repositório')
@@ -782,6 +805,20 @@ export default function App() {
             Modo local (sem Cursor)
           </label>
         </span>
+        {standaloneMode && appInstall && (
+          <span className="badge secondary-badge">
+            <a href={appInstall.paths.url} target="_blank" rel="noreferrer">
+              {appInstall.paths.url}
+            </a>
+            {!appInstall.shortcuts.launcher.installed && appInstall.ready && (
+              <button type="button" className="tiny" disabled={busy} onClick={runInstallShortcut} style={{ marginLeft: 8 }}>
+                Criar atalho
+              </button>
+            )}
+            {appInstall.shortcuts.launcher.installed && <span style={{ marginLeft: 8 }}>✓ atalho</span>}
+          </span>
+        )}
+        {installMsg && <span className="badge secondary-badge">{installMsg}</span>}
         {githubAuth && <span className="badge secondary-badge">GitHub: {githubAuth}</span>}
         {feedbackSummary && feedbackSummary.total > 0 && (
           <span className="badge secondary-badge">

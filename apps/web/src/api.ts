@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, LocalApplyBatchResult, LocalApplyResult, NotificationConfig, PlanApplyResult, PlanApplyView, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
+import type { ActionSuggestion, AnalysisResult, AppInstallStatus, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, LocalApplyBatchResult, LocalApplyResult, NotificationConfig, PlanApplyResult, PlanApplyView, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -321,5 +321,16 @@ export function downloadPortfolioScorecard(root = 'c:\\_PROJETOS', max = 10) {
     const disposition = res.headers.get('content-disposition') || ''
     const match = disposition.match(/filename="([^"]+)"/)
     return { blob, filename: match?.[1] || 'max-stack-scorecard.zip' }
+  })
+}
+
+export function getAppInstallStatus() {
+  return api<AppInstallStatus>('/api/app/install-status')
+}
+
+export function installAppShortcut(dryRun = false) {
+  return api<{ ok: boolean; message?: string; url?: string; shortcut?: string }>('/api/app/install', {
+    method: 'POST',
+    body: JSON.stringify({ dryRun }),
   })
 }

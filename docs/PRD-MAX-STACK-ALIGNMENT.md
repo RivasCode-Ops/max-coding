@@ -204,6 +204,18 @@
 - `npm run portfolio-quality` · `GET /api/portfolio/quality`
 - UI painel **Qualidade do portfolio**
 
+### Bloco AD — Fase 28 App local (v0.30) ✅
+
+- `local-apply.mjs` — fixes pilot sem Cursor
+- `max-app.mjs` + `MaxStack.cmd` — launcher local
+- UI **Modo local** · API `/api/local-apply`
+
+### Bloco AE — Fase 29 Instalar app (v0.31) ✅
+
+- `app-installer.mjs` — atalho área de trabalho + link `.url`
+- `npm run install-app` · `GET /api/app/install-status` · `POST /api/app/install`
+- UI botão **Criar atalho** no header (modo local)
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -237,3 +249,5 @@
 - [x] Fase 25 Scorecard ZIP (digest + heatmap/chart SVG + scorecards)
 - [x] Fase 26 Apply plan (aprovar backlog → Cursor → verify)
 - [x] Fase 27 Portfolio quality (sinais agregados no portfolio)
+- [x] Fase 28 App local (standalone sem Cursor)
+- [x] Fase 29 Instalar app (atalho desktop + link)

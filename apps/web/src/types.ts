@@ -513,7 +513,26 @@ export type Status = {
   version: string
   port: number
   db: number
+  standalone?: boolean
   github?: { pat: boolean; app: boolean; webhook: boolean }
   feedback?: FeedbackSummary
-  standalone?: boolean
+}
+
+export type AppInstallStatus = {
+  platform: string
+  supported: boolean
+  paths: {
+    root: string
+    port: number
+    host: string
+    url: string
+    launcher: string
+    launcherExists: boolean
+  }
+  shortcuts: {
+    launcher: { path: string; installed: boolean; name: string }
+    url: { path: string; installed: boolean; name: string }
+  }
+  ready: boolean
+  message: string
 }

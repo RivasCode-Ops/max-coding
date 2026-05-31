@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.30.0',
+      version: '0.31.0',
       standalone: process.env.MAX_STANDALONE === '1',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
@@ -265,6 +265,24 @@ async function handle(req, res) {
   if (path === '/api/notifications/test' && req.method === 'POST') {
     const { sendTestNotification } = await import('../../core/lib/notifications.mjs')
     const result = await sendTestNotification(getDb())
+    return sendJson(res, 200, result)
+  }
+
+  if (path === '/api/app/install-status' && req.method === 'GET') {
+    const { getAppInstallStatus } = await import('../../core/lib/app-installer.mjs')
+    return sendJson(res, 200, getAppInstallStatus({ root: ROOT, port: PORT, host: HOST }))
+  }
+
+  if (path === '/api/app/install' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { installDesktopShortcut } = await import('../../core/lib/app-installer.mjs')
+    const result = installDesktopShortcut({
+      root: ROOT,
+      port: PORT,
+      host: HOST,
+      dryRun: Boolean(body.dryRun),
+    })
+    if (!result.ok) return sendJson(res, 400, result)
     return sendJson(res, 200, result)
   }
 

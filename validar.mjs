@@ -365,6 +365,15 @@ await step('Local apply app (Fase 28)', async () => {
   ok(`${batch.results.length} recs · ${run.count} fix local preview · standalone ok`)
 })
 
+await step('App installer (Fase 29)', async () => {
+  const { getAppInstallStatus, installDesktopShortcut } = await import('./packages/core/lib/app-installer.mjs')
+  const status = getAppInstallStatus({ root: ROOT })
+  if (!status.paths.url.includes('3847')) throw new Error('URL app inválida')
+  const preview = installDesktopShortcut({ root: ROOT, dryRun: true })
+  if (!preview.ok) throw new Error(preview.reason || 'install preview falhou')
+  ok(`${status.platform} · url ${status.paths.url} · launcher=${status.paths.launcherExists}`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

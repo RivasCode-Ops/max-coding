@@ -11,6 +11,7 @@ npm install
 npm run validar                              # checagem completa
 npm start                                    # http://localhost:3847 (React UI)
 npm run app                                  # launcher local (abre browser, sem Cursor)
+npm run install-app                          # atalho na área de trabalho (Windows)
 MaxStack.cmd                                 # duplo-clique no Windows
 npm run quick -- c:\_PROJETOS\Meu-Repo
 npm run quick -- https://github.com/org/repo
