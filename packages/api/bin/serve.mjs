@@ -62,7 +62,8 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.29.0',
+      version: '0.30.0',
+      standalone: process.env.MAX_STANDALONE === '1',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -686,9 +687,68 @@ async function handle(req, res) {
     return sendJson(res, 200, report)
   }
 
+  if (path === '/api/local-apply' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, analysisId, recommendationId, dryRun = false, force = false } = body
+    if (!recommendationId) return sendJson(res, 400, { error: 'recommendationId obrigatório' })
+
+    let analysisResult = null
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+      analysisResult = row.data
+      analysisResult.analysisId = row.id
+      analysisResult.repo = analysisResult.repo || { path: row.path, slug: row.slug }
+    } else if (repoPath) {
+      analysisResult = await analyzeRepository(resolve(repoPath), {
+        mode: 'quick',
+        writeReports: false,
+        persistSqlite: false,
+      })
+    } else {
+      return sendJson(res, 400, { error: 'Informe path ou analysisId' })
+    }
+
+    const { applyRecommendationLocally } = await import('../../core/lib/local-apply.mjs')
+    const applied = applyRecommendationLocally(analysisResult, recommendationId, { dryRun, force })
+    return sendJson(res, 200, applied)
+  }
+
+  if (path === '/api/local-apply/batch' && req.method === 'POST') {
+    const body = JSON.parse((await readBody(req)) || '{}')
+    const { path: repoPath, analysisId, maxPriority = 2, dryRun = false, force = false } = body
+    let analysisResult = null
+    if (analysisId) {
+      const row = getAnalysis(getDb(), Number(analysisId))
+      if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
+      analysisResult = row.data
+      analysisResult.analysisId = row.id
+      analysisResult.repo = analysisResult.repo || { path: row.path, slug: row.slug }
+    } else if (repoPath) {
+      analysisResult = await analyzeRepository(resolve(repoPath), {
+        mode: 'quick',
+        writeReports: false,
+        persistSqlite: false,
+      })
+    } else {
+      return sendJson(res, 400, { error: 'Informe path ou analysisId' })
+    }
+
+    const { applyBatchLocally } = await import('../../core/lib/local-apply.mjs')
+    const batch = applyBatchLocally(analysisResult, { maxPriority, dryRun, force })
+    return sendJson(res, 200, batch)
+  }
+
   if (path === '/api/plan/apply' && req.method === 'POST') {
     const body = JSON.parse((await readBody(req)) || '{}')
-    const { analysisId, approvedIds = [], verifyAfter = false, validateRepo = true, dryRun = false } = body
+    const {
+      analysisId,
+      approvedIds = [],
+      verifyAfter = false,
+      validateRepo = true,
+      dryRun = false,
+      mode = 'local',
+    } = body
     if (!analysisId) return sendJson(res, 400, { error: 'analysisId obrigatório' })
     const row = getAnalysis(getDb(), Number(analysisId))
     if (!row) return sendJson(res, 404, { error: 'Análise não encontrada' })
@@ -697,6 +757,18 @@ async function handle(req, res) {
       analysisId: row.id,
       repo: row.data.repo || { path: row.path, slug: row.slug },
     }
+
+    if (mode === 'local') {
+      const { executeLocalPlanWorkflow } = await import('../../core/lib/local-apply.mjs')
+      const result = await executeLocalPlanWorkflow(analysisResult, approvedIds, {
+        verifyAfter: Boolean(verifyAfter),
+        validateRepo: Boolean(validateRepo),
+        dryRun: Boolean(dryRun),
+        baselineAnalysisId: row.id,
+      })
+      return sendJson(res, 200, result)
+    }
+
     const { executePlanWorkflow } = await import('../../core/lib/apply-plan.mjs')
     const result = await executePlanWorkflow(analysisResult, approvedIds, {
       verifyAfter: Boolean(verifyAfter),

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, downloadPortfolioScorecard, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioQuality, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, downloadPortfolioScorecard, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioQuality, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, localApply, localApplyBatch, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
 import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry, WatchScheduleStatus } from './types'
 import PortfolioQualityPanel from './PortfolioQualityPanel'
 import HealthTrendChart from './HealthTrendChart'
@@ -98,6 +98,8 @@ export default function App() {
   const [watchSchedule, setWatchSchedule] = useState<WatchScheduleStatus | null>(null)
   const [scheduleIntervalMin, setScheduleIntervalMin] = useState(60)
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
+  const [standaloneMode, setStandaloneMode] = useState(() => localStorage.getItem('max-standalone') !== '0')
+  const [localMsg, setLocalMsg] = useState<string | null>(null)
 
   async function loadRecFeedback(analysisId: number) {
     try {
@@ -133,7 +135,8 @@ export default function App() {
         setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
-      if (s.version && s.version !== '0.29.0') {
+      if (s.standalone) setStandaloneMode(true)
+      if (s.version && s.version !== '0.30.0') {
         setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
       }
       const h = await listHistory()
@@ -434,6 +437,42 @@ export default function App() {
     }
   }
 
+  async function runLocalApply(recommendationId: string) {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return alert('Informe o repositório')
+    setBusy(true)
+    setLocalMsg(null)
+    try {
+      const r = await localApply(path, recommendationId, result?.analysisId)
+      setLocalMsg(r.summary || r.title)
+      if (r.ok && !r.manual && result?.analysisId) await load(result.analysisId)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function runLocalApplyBatch() {
+    const path = result?.repo?.path || repoPath.trim()
+    if (!path) return
+    setBusy(true)
+    try {
+      const r = await localApplyBatch(path, result?.analysisId, 2)
+      setLocalMsg(`${r.count} fix(es) local · ${r.manual.length} manual`)
+      if (r.count && result?.analysisId) await load(result.analysisId)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function toggleStandalone(next: boolean) {
+    setStandaloneMode(next)
+    localStorage.setItem('max-standalone', next ? '1' : '0')
+  }
+
   async function runCursorApply(recommendationId: string, autoPilot = false) {
     const path = result?.repo?.path || repoPath.trim()
     if (!path) return alert('Informe o repositório')
@@ -480,6 +519,14 @@ export default function App() {
   }
 
   async function applySuggestion(s: ActionSuggestion, autoPilot = false) {
+    if (standaloneMode && (autoPilot || s.pilotFix)) {
+      await runApplyPilot(false)
+      return
+    }
+    if (standaloneMode) {
+      alert('Esta sugestão não tem fix automático — use Deep Scan ou ative modo Cursor.')
+      return
+    }
     await runCursorApply(s.id, autoPilot || Boolean(s.pilotFix && s.kind === 'pilot'))
   }
 
@@ -654,6 +701,7 @@ export default function App() {
   }
 
   async function runApplyBatch() {
+    if (standaloneMode) return runLocalApplyBatch()
     const path = result?.repo?.path || repoPath.trim()
     if (!path) return
     setBusy(true)
@@ -722,8 +770,18 @@ export default function App() {
       )}
       <header>
         <h1>Max Stack</h1>
-        <p>Auditoria local-first de repositórios</p>
+        <p>Auditoria local-first de repositórios {standaloneMode ? '· app standalone (sem Cursor)' : ''}</p>
         <span className="badge">{status}</span>
+        <span className={`badge ${standaloneMode ? 'secondary-badge' : ''}`}>
+          <label className="inline-check">
+            <input
+              type="checkbox"
+              checked={standaloneMode}
+              onChange={(e) => toggleStandalone(e.target.checked)}
+            />
+            Modo local (sem Cursor)
+          </label>
+        </span>
         {githubAuth && <span className="badge secondary-badge">GitHub: {githubAuth}</span>}
         {feedbackSummary && feedbackSummary.total > 0 && (
           <span className="badge secondary-badge">
@@ -1522,17 +1580,19 @@ export default function App() {
                     {s.subtitle && <p className="note">{s.subtitle}</p>}
                     {s.written?.relative && <small className="note">Task: {s.written.relative}</small>}
                     <div className="row feedback-row">
-                      <button type="button" className="tiny cursor-btn" disabled={busy} onClick={() => applySuggestion(s)}>
-                        Aplicar no Cursor
-                      </button>
+                      {!standaloneMode && (
+                        <button type="button" className="tiny cursor-btn" disabled={busy} onClick={() => applySuggestion(s)}>
+                          Aplicar no Cursor
+                        </button>
+                      )}
                       {s.pilotFix && (
                         <button
                           type="button"
-                          className="tiny secondary"
+                          className="tiny cursor-btn"
                           disabled={busy}
                           onClick={() => applySuggestion(s, true)}
                         >
-                          + pilot ({s.pilotFix})
+                          {standaloneMode ? `Aplicar local (${s.pilotFix})` : `+ pilot (${s.pilotFix})`}
                         </button>
                       )}
                       <button
@@ -1550,14 +1610,15 @@ export default function App() {
                 ))}
               </ul>
             )}
-            {cursorMsg && <pre className="cursor-msg">{cursorMsg}</pre>}
+            {cursorMsg && !standaloneMode && <pre className="cursor-msg">{cursorMsg}</pre>}
+            {localMsg && standaloneMode && <pre className="cursor-msg">{localMsg}</pre>}
           </section>
 
           <section className="card">
             <h2>Recomendações ({result.recommendations?.length || 0})</h2>
             <div className="row">
               <button type="button" className="tiny cursor-btn" disabled={busy} onClick={runApplyBatch}>
-                Aplicar todas P1/P2 no Cursor
+                {standaloneMode ? 'Aplicar P1/P2 localmente' : 'Aplicar todas P1/P2 no Cursor'}
               </button>
               <button type="button" className="tiny secondary" disabled={busy} onClick={runVerify}>
                 Verificar implementação
@@ -1582,14 +1643,25 @@ export default function App() {
                 </strong>
                 <p>{r.suggestedUpgrade || r.problem}</p>
                 <div className="row feedback-row">
-                  <button
-                    type="button"
-                    className="tiny cursor-btn"
-                    disabled={busy}
-                    onClick={() => runCursorApply(r.id)}
-                  >
-                    Aplicar no Cursor
-                  </button>
+                  {standaloneMode ? (
+                    <button
+                      type="button"
+                      className="tiny cursor-btn"
+                      disabled={busy}
+                      onClick={() => runLocalApply(r.id)}
+                    >
+                      Aplicar localmente
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="tiny cursor-btn"
+                      disabled={busy}
+                      onClick={() => runCursorApply(r.id)}
+                    >
+                      Aplicar no Cursor
+                    </button>
+                  )}
                   <button
                     type="button"
                     className={`tiny ${feedbackSent[r.id] === 'up' ? 'active' : ''}`}
@@ -1614,7 +1686,7 @@ export default function App() {
             ))}
           </section>
 
-          {cursorTasks.length > 0 && (
+          {!standaloneMode && cursorTasks.length > 0 && (
             <section className="card">
               <h2>Tasks Cursor ({cursorTasks.length})</h2>
               <p className="note">Arquivos em .cursor/max-stack/tasks/ — referencie no Agent com @arquivo</p>
@@ -1709,6 +1781,7 @@ export default function App() {
                 repoPath={result.repo?.path}
                 busy={busy}
                 setBusy={setBusy}
+                standaloneMode={standaloneMode}
                 onTasksCreated={() => result.repo?.path && loadCursorTasks(result.repo.path)}
                 onVerified={(report) => setVerifyReport(report)}
               />

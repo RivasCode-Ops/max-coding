@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanApplyResult, PlanApplyView, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, LocalApplyBatchResult, LocalApplyResult, NotificationConfig, PlanApplyResult, PlanApplyView, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -168,10 +168,30 @@ export function getPlanApplyView(analysisId: number) {
   return api<PlanApplyView>(`/api/analyses/${analysisId}/plan-apply`)
 }
 
-export function applyPlanItems(analysisId: number, approvedIds: string[], verifyAfter = false, dryRun = false) {
+export function applyPlanItems(
+  analysisId: number,
+  approvedIds: string[],
+  verifyAfter = false,
+  dryRun = false,
+  mode: 'local' | 'cursor' = 'local',
+) {
   return api<PlanApplyResult>('/api/plan/apply', {
     method: 'POST',
-    body: JSON.stringify({ analysisId, approvedIds, verifyAfter, dryRun }),
+    body: JSON.stringify({ analysisId, approvedIds, verifyAfter, dryRun, mode }),
+  })
+}
+
+export function localApply(path: string, recommendationId: string, analysisId?: number, dryRun = false) {
+  return api<LocalApplyResult>('/api/local-apply', {
+    method: 'POST',
+    body: JSON.stringify({ path, recommendationId, analysisId, dryRun }),
+  })
+}
+
+export function localApplyBatch(path: string, analysisId?: number, maxPriority = 2, dryRun = false) {
+  return api<LocalApplyBatchResult>('/api/local-apply/batch', {
+    method: 'POST',
+    body: JSON.stringify({ path, analysisId, maxPriority, dryRun }),
   })
 }
 

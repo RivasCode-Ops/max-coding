@@ -10,6 +10,8 @@ Repositório: [RivasCode-Ops/max-coding](https://github.com/RivasCode-Ops/max-co
 npm install
 npm run validar                              # checagem completa
 npm start                                    # http://localhost:3847 (React UI)
+npm run app                                  # launcher local (abre browser, sem Cursor)
+MaxStack.cmd                                 # duplo-clique no Windows
 npm run quick -- c:\_PROJETOS\Meu-Repo
 npm run quick -- https://github.com/org/repo
 npm run deep -- c:\_PROJETOS\Quadro-Negro
@@ -37,6 +39,7 @@ npm run watch-schedule -- install c:\_PROJETOS 60
 npm run portfolio-scorecard -- c:\_PROJETOS 10
 npm run apply-plan -- c:\_PROJETOS\Meu-Repo --approve rec-001,rec-002 --verify
 npm run portfolio-quality -- c:\_PROJETOS 12
+npm run local-apply -- c:\_PROJETOS\Meu-Repo --batch
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.

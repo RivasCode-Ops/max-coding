@@ -2,7 +2,7 @@
  * Fluxo apply plan — Fase 26
  * plan → aprovar itens → cursor-batch → verify
  */
-import { applyRecommendationViaCursor } from './cursor-apply.mjs'
+import { applyRecommendationViaCursor, mapRecToPilotFix } from './cursor-apply.mjs'
 import { buildPlanPackage } from './plan-package.mjs'
 import { verifyImplementation } from './verify-apply.mjs'
 
@@ -27,6 +27,8 @@ export function buildPlanApplyView(analysisResult) {
   const recommendations = analysisResult.recommendations || []
   const items = (pkg.backlog || []).map((b) => {
     const recommendationId = resolveRecommendationId(b, recommendations)
+    const rec = recommendations.find((r) => r.id === recommendationId)
+    const pilotFix = rec ? mapRecToPilotFix(rec) : null
     return {
       backlogId: b.id,
       recommendationId,
@@ -34,6 +36,8 @@ export function buildPlanApplyView(analysisResult) {
       priority: b.priority ?? 3,
       tasks: b.tasks || [],
       applyable: Boolean(recommendationId),
+      localApplyable: Boolean(pilotFix),
+      pilotFix,
       suggested: (b.priority ?? 3) <= 2,
     }
   })

@@ -353,6 +353,18 @@ await step('Portfolio quality (Fase 27)', async () => {
   ok(`${report.summary.repoCount} repos · média ${report.summary.averagePct}% · fraco: ${report.summary.weakestChecks[0]?.label || '—'}`)
 })
 
+await step('Local apply app (Fase 28)', async () => {
+  const { applyBatchLocally, applyApprovedPlanItemsLocally } = await import('./packages/core/lib/local-apply.mjs')
+  const { buildPlanApplyView } = await import('./packages/core/lib/apply-plan.mjs')
+  const result = await analyzeRepository(ROOT, { mode: 'deep', auditMode: 'plan', writeReports: false, githubSearch: false })
+  const view = buildPlanApplyView(result)
+  const batch = applyBatchLocally(result, { dryRun: true, maxPriority: 2 })
+  const approved = view.items.filter((i) => i.localApplyable).slice(0, 1).map((i) => i.backlogId)
+  const run = applyApprovedPlanItemsLocally(result, approved, { dryRun: true })
+  if (batch.results.length < 1) throw new Error('local batch vazio')
+  ok(`${batch.results.length} recs · ${run.count} fix local preview · standalone ok`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

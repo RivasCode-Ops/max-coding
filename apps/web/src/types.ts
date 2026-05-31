@@ -421,6 +421,8 @@ export type PlanApplyItem = {
   priority: number
   tasks: string[]
   applyable: boolean
+  localApplyable?: boolean
+  pilotFix?: string | null
   suggested: boolean
 }
 
@@ -435,13 +437,42 @@ export type PlanApplyView = {
   suggestedIds: string[]
 }
 
+export type LocalApplyResult = {
+  mode: 'local'
+  recommendationId: string
+  title: string
+  pilotFix?: string | null
+  ok: boolean
+  manual: boolean
+  summary?: string
+  reason?: string
+  guidance?: string
+  files?: string[]
+  pilotResult?: { fixId?: string; written?: string; skipped?: boolean; dryRun?: boolean }
+}
+
+export type LocalApplyBatchResult = {
+  mode: 'local'
+  count: number
+  applied: LocalApplyResult[]
+  manual: LocalApplyResult[]
+  results: LocalApplyResult[]
+}
+
 export type PlanApplyResult = {
-  phase: 'plan-apply'
+  phase: 'plan-apply' | 'plan-apply-local'
+  mode?: 'local' | 'cursor'
   summary: string
   apply: {
     count: number
-    applied: { title: string; backlogId: string; recommendationId?: string | null; result?: CursorApplyResult }[]
-    skipped: { title: string; reason: string }[]
+    manualCount?: number
+    applied: {
+      title: string
+      backlogId: string
+      recommendationId?: string | null
+      result?: CursorApplyResult | LocalApplyResult
+    }[]
+    skipped: { title: string; reason: string; result?: LocalApplyResult }[]
   }
   verify?: VerificationReport | null
 }
@@ -484,4 +515,5 @@ export type Status = {
   db: number
   github?: { pat: boolean; app: boolean; webhook: boolean }
   feedback?: FeedbackSummary
+  standalone?: boolean
 }
