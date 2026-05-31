@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, downloadPortfolioScorecard, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
-import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry, WatchScheduleStatus } from './types'
+import { analyze, applyPilot, applyRules, compareRepos, cursorApply, cursorApplyBatch, downloadPortfolioScorecard, evolvePortfolioBatch, evolveRepo, getAnalysis, getAnalysisFeedback, getAnalysisPlan, getAnalysisReport, getNotificationConfig, getPortfolio, getPortfolioAlerts, getPortfolioDigest, getPortfolioQuality, getPortfolioWatchLog, getRepoContext, getStatus, getTrend, getWatchScheduleStatus, installHook, installWatchSchedule, listCursorTasks, listHistory, postPrComment, publishIssuesToGithub, removeWatchSchedule, rescanPortfolio, runPortfolioWatch, saveNotificationConfig, savePortfolioGoals, sendFeedback, suggestAction, testNotification, validateRepo, verifyImplementation } from './api'
+import type { ActionSuggestion, AnalysisResult, CursorTaskFile, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, RepoCompareResult, RepoContext, VerificationReport, WatchLogEntry, WatchScheduleStatus } from './types'
+import PortfolioQualityPanel from './PortfolioQualityPanel'
 import HealthTrendChart from './HealthTrendChart'
 import PortfolioHealthChart from './PortfolioHealthChart'
 import PortfolioHistoryPanel from './PortfolioHistoryPanel'
@@ -44,6 +45,7 @@ export default function App() {
     heatmap?: PortfolioHeatmap
     goals?: PortfolioGoals
     goalsProgress?: PortfolioGoalsProgress
+    quality?: PortfolioQualityReport
   } | null>(null)
   const [prOwnerRepo, setPrOwnerRepo] = useState('RivasCode-Ops/Quadro-Negro')
   const [prNumber, setPrNumber] = useState('1')
@@ -131,7 +133,7 @@ export default function App() {
         setGithubAuth(parts.length ? parts.join('+') : 'sem auth GitHub')
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
-      if (s.version && s.version !== '0.28.0') {
+      if (s.version && s.version !== '0.29.0') {
         setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
       }
       const h = await listHistory()
@@ -163,6 +165,13 @@ export default function App() {
   async function refreshPortfolio() {
     try {
       const p = await getPortfolio(portfolioRoot)
+      let quality: PortfolioQualityReport | undefined
+      try {
+        const q = await getPortfolioQuality(portfolioRoot, 10)
+        quality = q.quality
+      } catch {
+        quality = undefined
+      }
       setPortfolio({
         summary: p.summary ?? EMPTY_PORTFOLIO_SUMMARY,
         items: p.items ?? [],
@@ -171,6 +180,7 @@ export default function App() {
         heatmap: p.heatmap,
         goals: p.goals,
         goalsProgress: p.goalsProgress,
+        quality,
       })
       if (p.goals) setPortfolioGoals(p.goals)
       if (p.goalsProgress) setGoalsProgress(p.goalsProgress)
@@ -1199,6 +1209,12 @@ export default function App() {
               <>
                 <h3 className="subhead">Heatmap de categorias (12)</h3>
                 <PortfolioHeatmapPanel heatmap={portfolio.heatmap} />
+              </>
+            )}
+            {portfolio.quality && portfolio.quality.repos.length > 0 && (
+              <>
+                <h3 className="subhead">Qualidade do portfolio</h3>
+                <PortfolioQualityPanel report={portfolio.quality} />
               </>
             )}
             {activeSlug && portfolio.items.length > 1 && (

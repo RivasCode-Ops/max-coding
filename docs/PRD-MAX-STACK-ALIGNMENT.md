@@ -198,6 +198,12 @@
 - `npm run apply-plan` · `GET /api/analyses/:id/plan-apply` · `POST /api/plan/apply`
 - UI **Aplicar plano** com checkboxes e fluxo verificar
 
+### Bloco AC — Fase 27 Portfolio quality (v0.29) ✅
+
+- `portfolio-quality.mjs` — média de sinais de qualidade no portfolio
+- `npm run portfolio-quality` · `GET /api/portfolio/quality`
+- UI painel **Qualidade do portfolio**
+
 ## Métricas de sucesso V1 (PRD)
 
 - [x] Repo local **ou** GitHub público
@@ -230,3 +236,4 @@
 - [x] Fase 24 Watch schedule (Task Scheduler Windows + `--once`)
 - [x] Fase 25 Scorecard ZIP (digest + heatmap/chart SVG + scorecards)
 - [x] Fase 26 Apply plan (aprovar backlog → Cursor → verify)
+- [x] Fase 27 Portfolio quality (sinais agregados no portfolio)

@@ -148,6 +148,27 @@ export type WatchScheduleStatus = {
   repoRoot?: string
 }
 
+export type PortfolioQualityCheck = {
+  id: string
+  label: string
+  group: string
+  passed: number
+  total: number
+  pct: number
+}
+
+export type PortfolioQualityReport = {
+  summary: {
+    repoCount: number
+    averagePct: number
+    weakestChecks: PortfolioQualityCheck[]
+    strongestChecks: PortfolioQualityCheck[]
+    weakestGroups: { id: string; label: string; passed: number; total: number; pct: number }[]
+  }
+  checks: PortfolioQualityCheck[]
+  repos: { slug: string; path?: string; health?: number; passed: number; total: number; pct: number }[]
+}
+
 export type PortfolioChartBar = {
   slug: string
   health: number

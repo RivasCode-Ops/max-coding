@@ -341,6 +341,18 @@ await step('Apply plan workflow (Fase 26)', async () => {
   ok(`${view.applyableCount} applyable · ${run.count} task(s) preview`)
 })
 
+await step('Portfolio quality (Fase 27)', async () => {
+  const { buildPortfolioQuality } = await import('./packages/core/lib/portfolio-quality.mjs')
+  const { discoverLocalRepos, quickScanPortfolio, mergePortfolio, buildPortfolioFromDb } = await import(
+    './packages/core/lib/portfolio.mjs',
+  )
+  const root = join(ROOT, '..')
+  const items = mergePortfolio(buildPortfolioFromDb(getDb()), quickScanPortfolio(discoverLocalRepos(root)))
+  const report = buildPortfolioQuality(items, { maxRepos: 3 })
+  if (!report.checks.length || report.summary.repoCount < 1) throw new Error('portfolio quality vazio')
+  ok(`${report.summary.repoCount} repos · média ${report.summary.averagePct}% · fraco: ${report.summary.weakestChecks[0]?.label || '—'}`)
+})
+
 closeDb()
 
 console.log(failed ? `\n✗ ${failed} falha(s)\n` : '\n✓ Max Stack validar OK\n')

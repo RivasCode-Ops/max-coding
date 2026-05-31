@@ -62,7 +62,7 @@ async function handle(req, res) {
     return sendJson(res, 200, {
       ok: true,
       product: 'Max Stack',
-      version: '0.28.0',
+      version: '0.29.0',
       port: PORT,
       db: getDb().prepare('SELECT COUNT(*) AS n FROM analyses').get().n,
       github: {
@@ -314,6 +314,23 @@ async function handle(req, res) {
       return sendJson(res, 200, { root, markdown: formatPortfolioDigestMarkdown(digest) })
     }
     return sendJson(res, 200, { root, digest, markdown: formatPortfolioDigestMarkdown(digest) })
+  }
+
+  if (path === '/api/portfolio/quality' && req.method === 'GET') {
+    const root = resolve(url.searchParams.get('root') || process.env.MAX_PORTFOLIO_ROOT || 'c:\\_PROJETOS')
+    const maxRepos = Number(url.searchParams.get('max') || 12)
+    const local = discoverLocalRepos(root)
+    const scanned = quickScanPortfolio(local)
+    const fromDb = buildPortfolioFromDb(getDb())
+    const items = mergePortfolio(fromDb, scanned)
+    const { buildPortfolioQuality, formatPortfolioQualityMarkdown } = await import(
+      '../../core/lib/portfolio-quality.mjs',
+    )
+    const report = buildPortfolioQuality(items, { maxRepos })
+    if (url.searchParams.get('format') === 'md') {
+      return sendJson(res, 200, { root, markdown: formatPortfolioQualityMarkdown(report) })
+    }
+    return sendJson(res, 200, { root, quality: report, markdown: formatPortfolioQualityMarkdown(report) })
   }
 
   if (path === '/api/portfolio/scorecard' && req.method === 'GET') {

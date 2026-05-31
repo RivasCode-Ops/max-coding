@@ -36,11 +36,12 @@ npm run watch-schedule                   # status da tarefa Windows
 npm run watch-schedule -- install c:\_PROJETOS 60
 npm run portfolio-scorecard -- c:\_PROJETOS 10
 npm run apply-plan -- c:\_PROJETOS\Meu-Repo --approve rec-001,rec-002 --verify
+npm run portfolio-quality -- c:\_PROJETOS 12
 ```
 
 Ver [GITHUB-APP.md](./docs/GITHUB-APP.md) para configurar PAT ou GitHub App.
 
-## V1 PRD — status (v0.28)
+## V1 PRD — status (v0.29)
 
 Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 
@@ -273,6 +274,13 @@ Snapshot consolidado: [docs/LEVANTAMENTO.md](./docs/LEVANTAMENTO.md)
 | Fluxo autorizado | plan → aprovar itens → Cursor tasks → verify |
 | CLI | `npm run apply-plan -- <path> --approve id1,id2 [--verify]` |
 | API + UI | `GET .../plan-apply` · `POST /api/plan/apply` · **Aplicar plano** |
+
+### Fase 27 (portfolio quality)
+
+| Feature | CLI / API |
+|---------|-----------|
+| Sinais agregados | `npm run portfolio-quality -- [root] [max]` |
+| API + UI | `GET /api/portfolio/quality` · painel no portfolio |
 
 Ver [PRD-MAX-STACK-ALIGNMENT.md](./docs/PRD-MAX-STACK-ALIGNMENT.md).
 

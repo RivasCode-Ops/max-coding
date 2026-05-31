@@ -1,4 +1,4 @@
-import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanApplyResult, PlanApplyView, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
+import type { ActionSuggestion, AnalysisResult, CursorApplyResult, EvolveBatchResult, EvolveResult, FeedbackRecStats, FeedbackSummary, HistoryItem, IssuesPublishResult, NotificationConfig, PlanApplyResult, PlanApplyView, PlanPackage, PortfolioAlert, PortfolioAlertsSummary, PortfolioChart, PortfolioGoals, PortfolioGoalsProgress, PortfolioHeatmap, PortfolioHistory, PortfolioItem, PortfolioQualityReport, PortfolioSummary, PortfolioWatchResult, Status, SuggestActionResult, CursorTaskFile, VerificationReport, RepoContext, RepoCompareResult, WatchLogEntry, WatchScheduleStatus } from './types'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -246,6 +246,12 @@ export function getPortfolioWatchLog(limit = 20) {
 
 export function getPortfolioDigest(root = 'c:\\_PROJETOS') {
   return api<{ root: string; markdown: string }>(`/api/portfolio/digest?root=${encodeURIComponent(root)}&format=md`)
+}
+
+export function getPortfolioQuality(root = 'c:\\_PROJETOS', max = 12) {
+  return api<{ root: string; quality: PortfolioQualityReport; markdown: string }>(
+    `/api/portfolio/quality?root=${encodeURIComponent(root)}&max=${max}`,
+  )
 }
 
 export function getNotificationConfig() {
