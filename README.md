@@ -2,9 +2,12 @@
 
 **Max Stack** é um sistema local-first de auditoria, análise estrutural e evolução contínua de repositórios.
 
-Repositório: [RivasCode-Ops/max-coding](https://github.com/RivasCode-Ops/max-coding)
+Repositório: [RivasCode-Ops/max-coding](https://github.com/RivasCode-Ops/max-coding)  
+**Inspirações GitHub (gstack, hematite, patterns):** [docs/GITHUB-INSPIRACOES.md](docs/GITHUB-INSPIRACOES.md)
 
 ## Uso rápido
+
+**Após `git pull` e o link `http://127.0.0.1:3847/` falhar:** use `Atualizar-e-Iniciar-Max.bat` ou leia [docs/APOS-ATUALIZAR.md](docs/APOS-ATUALIZAR.md).
 
 ```bash
 npm install
