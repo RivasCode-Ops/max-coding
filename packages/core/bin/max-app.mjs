@@ -36,7 +36,25 @@ function openBrowser() {
   exec(cmd, () => {})
 }
 
-setTimeout(openBrowser, 2500)
+waitForServer(120000).then(openBrowser).catch(() => {
+  console.error(`Servidor não respondeu em ${URL} — verifique erros acima (npm install · npm start).`)
+})
+
+function waitForServer(maxMs) {
+  const start = Date.now()
+  return new Promise((resolve, reject) => {
+    const tick = () => {
+      fetch(`${URL}/api/status`)
+        .then((r) => (r.ok ? resolve() : schedule()))
+        .catch(() => schedule())
+    }
+    const schedule = () => {
+      if (Date.now() - start > maxMs) reject(new Error('timeout'))
+      else setTimeout(tick, 800)
+    }
+    tick()
+  })
+}
 
 child.on('exit', (code) => process.exit(code ?? 0))
 

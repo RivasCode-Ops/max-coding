@@ -1,0 +1,32 @@
+---
+description: Frontend React + TypeScript — Max Stack UI
+globs:
+  - apps/web/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# React UI — apps/web
+
+## Stack
+
+- Vite + React + TypeScript
+- API via `src/api.ts` (fetch para `/api/*`)
+- Tipos em `src/types.ts` — manter sincronizado com `serve.mjs`
+
+## Padrões
+
+- Componentes funcionais; estado local com `useState` / `useEffect` como já em `App.tsx`.
+- Estilos em `App.css` — classes existentes (`card`, `row`, `secondary`, `cursor-btn`, etc.).
+- Loading/busy: respeitar flag `busy` nos botões.
+
+## Nova UI
+
+1. Tipo em `types.ts`
+2. Função em `api.ts`
+3. Estado + handler + JSX em `App.tsx` (ou extrair componente se > ~80 linhas)
+4. CSS mínimo coerente com tema escuro atual
+
+## UX
+
+- Mensagens de erro via `alert()` ou texto inline — seguir padrão existente.
+- Ctrl+F5 após `npm run build:web` para testar dist servida pela API.

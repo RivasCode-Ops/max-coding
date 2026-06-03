@@ -1,0 +1,34 @@
+---
+description: Testes e validação — npm test, validar.mjs, fases
+globs:
+  - tests/**/*.mjs
+  - validar.mjs
+  - packages/**/*.mjs
+alwaysApply: false
+---
+
+# Testing & validar
+
+## Antes de considerar pronto
+
+```bash
+npm test                 # testes unitários (phase*.test.mjs)
+npm run build:web        # se tocou apps/web
+npm run validar          # pipeline completo local
+```
+
+## Convenções de teste
+
+- `node:test` + `node:assert/strict`
+- Arquivo por fase: `tests/phaseN.test.mjs`
+- Step correspondente em `validar.mjs` para fluxos integrados
+
+## Ao adicionar feature
+
+- Teste mínimo da função exportada (happy path + um edge).
+- Não testar o óbvio (getters triviais, re-exports).
+- Mock de GitHub: usar `dryRun: true` ou `ownerRepo: 'org/demo'`.
+
+## Regressões
+
+Se `validar` falhar, corrigir antes de expandir escopo — não acumular features com validação quebrada.

@@ -1,0 +1,34 @@
+---
+description: Segurança — GitHub auth, API, secrets, repo alvo
+globs:
+  - packages/core/lib/github-*.mjs
+  - packages/core/lib/*auth*.mjs
+  - packages/api/bin/serve.mjs
+  - docs/GITHUB-APP.md
+alwaysApply: false
+---
+
+# Security review
+
+## Secrets
+
+- Nunca commitar `.env`, PAT, chaves de GitHub App, tokens.
+- Usar `GITHUB_TOKEN` / variáveis documentadas em `docs/GITHUB-APP.md`.
+- Respostas de API não devem vazar paths sensíveis do sistema do usuário além do necessário.
+
+## GitHub
+
+- Auth via `github-auth.mjs` — não duplicar lógica JWT/installation.
+- Issues/PR comments: respeitar rate limits; mensagens de erro truncadas (já no client).
+- Webhook: validar HMAC (`github-webhook.mjs`).
+
+## Repo alvo (auditoria)
+
+- Modo **audit**: somente leitura no repo analisado.
+- `apply-pilot`, `evolve`, `cursor-apply`: só com flag/pedido explícito.
+- Não executar comandos destrutivos no repo alvo (`rm -rf`, force push, etc.).
+
+## API local (`serve.mjs`)
+
+- Bind default `127.0.0.1` — não expor sem necessidade.
+- Validar input JSON; paths com `resolve()`; não seguir symlinks maliciosos.

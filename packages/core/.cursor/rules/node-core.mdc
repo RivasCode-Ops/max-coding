@@ -1,0 +1,33 @@
+---
+description: Core Node ESM — lib, CLI e pipeline Max Stack
+globs:
+  - packages/core/**/*.mjs
+  - packages/repo-scanner/**/*.mjs
+  - packages/recommender/**/*.mjs
+alwaysApply: false
+---
+
+# Node core — packages/core
+
+## Módulos
+
+- Um arquivo = uma responsabilidade em `lib/`.
+- Imports relativos com extensão `.mjs`.
+- DB: `db.mjs` + `getDb()` — não abrir SQLite ad hoc.
+
+## CLI (`bin/`)
+
+- Shebang `#!/usr/bin/env node`
+- Args via `process.argv`; `--dry-run` quando aplicável
+- `closeDb()` no fim se usou SQLite
+
+## Pipeline
+
+- Scan: `analyze.mjs` → não duplicar lógica de health/findings
+- Portfolio: `portfolio.mjs` + `portfolio-alerts.mjs` + `portfolio-chart.mjs`
+- Evolve: `evolve-repo.mjs` → `evolve-batch.mjs`
+- Cursor: `cursor-apply.mjs`, `action-suggester.mjs`, `verify-apply.mjs`
+
+## Exportar para API
+
+Funções puras/testáveis em `lib/`; `serve.mjs` só roteia e chama `import()` dinâmico quando necessário para startup rápido.

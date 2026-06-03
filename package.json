@@ -43,6 +43,10 @@
     "local-apply": "node packages/core/bin/local-apply.mjs",
     "app": "node packages/core/bin/max-app.mjs",
     "install-app": "node packages/core/bin/install-app.mjs",
-    "test": "node --test --test-concurrency=1 tests/**/*.test.mjs"
+    "test": "node --test --test-concurrency=1 tests/**/*.test.mjs",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
   }
 }

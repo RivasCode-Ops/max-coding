@@ -1,0 +1,37 @@
+---
+description: Padrões de código — diff mínimo e convenções do monorepo
+alwaysApply: true
+---
+
+# Coding standards — Max Stack
+
+## Princípios
+
+- **Diff mínimo** — uma preocupação por commit lógico; não refatorar fora do escopo.
+- **Convenções existentes** — ler arquivos adjacentes antes de criar abstrações novas.
+- **ESM** — `import`/`export`; extensão `.mjs` em `packages/core` e scripts Node.
+- **Sem over-engineering** — helpers de uma linha inline; sem camadas extras não pedidas.
+
+## Estrutura
+
+| Área | Onde |
+|------|------|
+| Lógica de negócio | `packages/core/lib/*.mjs` |
+| API HTTP | `packages/api/bin/serve.mjs` |
+| CLI | `packages/core/bin/*.mjs` |
+| UI | `apps/web/src/` |
+| Testes | `tests/phase*.test.mjs` + step em `validar.mjs` |
+
+## Nova feature (checklist)
+
+1. Módulo em `packages/core/lib/` se for reutilizável
+2. Rota em `serve.mjs` se expor API
+3. Tipos + `api.ts` + UI se for visível
+4. Teste em `tests/` e step em `validar.mjs` para fluxos críticos
+5. Atualizar `README.md` / `PRD-MAX-STACK-ALIGNMENT.md` só se mudar comportamento público
+
+## Evitar
+
+- `console.log` de debug no diff final
+- Duplicar lógica já em `analyze.mjs`, `portfolio.mjs`, etc.
+- Commit/push sem pedido explícito do usuário

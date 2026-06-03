@@ -37,7 +37,7 @@ Referência comportamental: [garrytan/gstack](https://github.com/garrytan/gstack
 ## Uso no Cursor
 
 1. Abrir repo **max-coding** ou repo alvo + apontar scan
-2. Regra `.cursor/rules/max-coding.mdc` (always)
+2. Regras `.cursor/rules/` + `AGENTS.md` (ver `00-core-max-stack.mdc`)
 3. Invocar papel: `@docs/agents/repo-scout.md` etc. ou rodar CLI `npm run audit -- <path>`
 4. Ler `reports/<slug>/handoff.json` antes de implementar no repo alvo
 

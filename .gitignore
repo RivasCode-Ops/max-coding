@@ -5,3 +5,4 @@ data/pr-checkouts/
 node_modules/
 .env
 *.log
+.cursor/max-stack/tasks/

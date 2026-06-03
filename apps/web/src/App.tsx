@@ -138,9 +138,6 @@ export default function App() {
       }
       if (s.feedback) setFeedbackSummary(s.feedback)
       if (s.standalone) setStandaloneMode(true)
-      if (s.version && s.version !== '0.31.0') {
-        setStatus(`Max Stack online · API v${s.version} (desatualizada) — pare a porta 3847 e rode npm start`)
-      }
       const h = await listHistory()
       setHistory(h.items)
       if (standaloneMode) {

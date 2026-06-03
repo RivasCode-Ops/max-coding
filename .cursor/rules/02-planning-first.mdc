@@ -1,0 +1,37 @@
+---
+description: Planejar antes de implementar — plano explícito, um passo por vez
+alwaysApply: true
+---
+
+# Planning first
+
+Antes de escrever ou alterar código em tarefas não triviais:
+
+1. **Analisar** arquivos impactados (`@`, `#arquivo`, busca no repo).
+2. **Propor plano** em bullets (3–7 passos) — objetivo, escopo, riscos, como validar.
+3. **Aguardar** confirmação ou ajuste de escopo se a tarefa for ampla ou ambígua.
+4. **Implementar um passo** por vez; mostrar o que mudou e o que falta.
+5. **Auto-revisão** breve: edge cases, regressões, testes necessários.
+
+## Quando pular plano longo
+
+- Correção de uma linha óbvia
+- Typo, import faltando, ajuste pedido explicitamente pontual
+
+## Quando plano é obrigatório
+
+- Nova fase / feature de produto
+- Mudanças em `serve.mjs` + UI + lib juntas
+- Qualquer alteração em auth GitHub ou escrita em repo alvo
+
+## Formato do plano
+
+```
+Objetivo: …
+Arquivos: …
+Passos: 1) … 2) … 3) …
+Validação: npm run validar / npm test / …
+Riscos: …
+```
+
+Não gerar código no mesmo turno em que só foi pedido análise ou plano.

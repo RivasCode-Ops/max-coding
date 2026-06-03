@@ -1,0 +1,46 @@
+---
+description: Max Stack — produto, CLI, modos e orquestração multi-papel
+alwaysApply: true
+---
+
+# Max Stack (max-coding)
+
+Produto: **Max Stack** · Repo: `max-coding`
+
+## Núcleo
+
+Scanner → health score (12 categorias) → SQLite (`data/max.db`) → UI React local.
+
+Monorepo: `packages/core`, `packages/api`, `packages/repo-scanner`, `apps/web`.
+
+## Comandos essenciais
+
+```bash
+npm start                    # http://127.0.0.1:3847
+npm run validar              # checagem completa local
+npm run quick -- <path>      # scan rápido
+npm run deep -- <path>       # scan + git + estrutura
+npm run evolve -- <path>     # scan → pilot → verify
+```
+
+## Orquestração (gstack-inspired)
+
+Papéis: Orchestrator, Repo Scout, Pattern Hunter, Architecture Auditor, Patch Planner, QA Verifier.
+
+- Detalhes: `docs/gstack-mapping.md`, `docs/agent-orchestration.md`
+- Prompts por papel: `docs/agents/*.md`
+- Entrada para agentes: `AGENTS.md`
+
+## Modos (guardrails)
+
+| Modo | Permite | Proibido |
+|------|---------|----------|
+| **audit** (default) | scan, relatório, recomendações | editar repo alvo |
+| **plan** | + backlog, issues template | apply código no alvo |
+| **apply** | alterações no repo alvo | apply sem verify |
+
+## Regras de produto
+
+- Evidência obrigatória por achado (confirmed / hypothesis / suggestion)
+- Não apply automático no repo alvo auditado
+- Ler `handoff.json` / resultado de scan antes de codar no alvo
